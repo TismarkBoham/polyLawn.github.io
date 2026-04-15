@@ -1,0 +1,1331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Polylawn — A lawn that works for your land</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --sage: #4a7c59;
+    --sage-light: #e8f0eb;
+    --sage-mid: #8fb89a;
+    --sage-dark: #3d6b4a;
+    --earth: #8b6914;
+    --earth-light: #f5edd6;
+    --cream: #faf8f3;
+    --ink: #1c1f1a;
+    --muted: #6b7068;
+    --border: rgba(74,124,89,0.18);
+    --white: #ffffff;
+    --sun: #d4820a;
+    --sun-light: #fff3dc;
+    --radius: 14px;
+    --radius-lg: 20px;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--cream);
+    color: var(--ink);
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  /* ---- NAV ---- */
+  nav {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(250,248,243,0.92);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    height: 58px;
+  }
+
+  .nav-brand { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+
+  .logo-sphere {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #7ec89a, #2d6e45);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; flex-shrink: 0;
+  }
+
+  .brand-name {
+    font-family: 'DM Serif Display', serif;
+    font-size: 20px; color: var(--sage); letter-spacing: -0.3px;
+  }
+
+  .nav-links { display: flex; gap: 24px; }
+  .nav-links a {
+    font-size: 13px; font-weight: 500; color: var(--muted);
+    text-decoration: none; transition: color 0.15s;
+  }
+  .nav-links a:hover { color: var(--sage); }
+
+  /* ---- HERO ---- */
+  .hero {
+    padding: 72px 24px 52px;
+    text-align: center;
+    max-width: 860px; margin: 0 auto;
+  }
+
+  .hero-eyebrow {
+    display: inline-block;
+    font-size: 12px; font-weight: 500;
+    color: var(--sage); text-transform: uppercase; letter-spacing: 1.2px;
+    background: var(--sage-light); padding: 5px 14px;
+    border-radius: 20px; border: 1px solid var(--border);
+    margin-bottom: 24px;
+  }
+
+  .hero h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(36px, 6vw, 52px);
+    line-height: 1.1; color: var(--ink);
+    letter-spacing: -1.5px; margin-bottom: 18px;
+  }
+
+  .hero h1 em { color: var(--sage); font-style: italic; }
+
+  .hero p {
+    font-size: 17px; color: var(--muted); line-height: 1.65;
+    max-width: 520px; margin: 0 auto 48px;
+  }
+
+  /* ---- APP CONTAINER ---- */
+  .app-wrap {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 0 24px 100px;
+  }
+
+  /* ---- PROGRESS ---- */
+  .progress-steps {
+    display: flex;
+    border-radius: var(--radius);
+    overflow: hidden;
+    border: 1px solid var(--border);
+    margin-bottom: 40px;
+    background: var(--white);
+  }
+
+  .prog-step {
+    flex: 1; padding: 11px 8px; text-align: center;
+    font-size: 12px; font-weight: 500; color: var(--muted);
+    background: var(--white); transition: all 0.3s;
+    border-right: 1px solid var(--border);
+  }
+
+  .prog-step:last-child { border-right: none; }
+  .prog-step.done { background: var(--sage-light); color: var(--sage); }
+  .prog-step.active { background: var(--sage); color: white; }
+
+  /* ---- INPUT CARD ---- */
+  .input-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 32px;
+    box-shadow: 0 4px 32px rgba(74,124,89,0.08);
+  }
+
+  .input-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 18px;
+    margin-bottom: 24px;
+  }
+
+  @media (max-width: 640px) {
+    .input-row { grid-template-columns: 1fr; }
+    .input-row .span2 { grid-column: 1; }
+  }
+
+  .span2 { grid-column: span 2; }
+
+  .field label {
+    display: block; font-size: 11px; font-weight: 500;
+    color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px;
+    margin-bottom: 7px;
+  }
+
+  .field input, .field select {
+    width: 100%; padding: 11px 13px;
+    border: 1px solid var(--border);
+    border-radius: 10px; font-size: 14px;
+    font-family: 'DM Sans', sans-serif;
+    background: var(--cream); color: var(--ink);
+    transition: border-color 0.2s, box-shadow 0.2s;
+    outline: none; -webkit-appearance: none; appearance: none;
+  }
+
+  .field select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b7068' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 32px;
+  }
+
+  .field input:focus, .field select:focus {
+    border-color: var(--sage);
+    box-shadow: 0 0 0 3px rgba(74,124,89,0.1);
+  }
+
+  .field .hint {
+    font-size: 11px; color: var(--muted); margin-top: 5px; line-height: 1.4;
+  }
+
+  /* ---- SHADE PICKER ---- */
+  .shade-row { margin-bottom: 24px; }
+
+  .shade-row > label {
+    display: block; font-size: 11px; font-weight: 500;
+    color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px;
+    margin-bottom: 10px;
+  }
+
+  .shade-options { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  .shade-btn {
+    padding: 8px 15px; border-radius: 22px; font-size: 13px;
+    border: 1px solid var(--border); background: var(--cream);
+    color: var(--muted); cursor: pointer; transition: all 0.15s;
+    font-family: 'DM Sans', sans-serif; font-weight: 400;
+  }
+
+  .shade-btn:hover { border-color: var(--sage); color: var(--sage); background: var(--sage-light); }
+  .shade-btn.active { background: var(--sage); color: white; border-color: var(--sage); }
+
+  /* ---- BUTTONS ---- */
+  .cta-btn {
+    width: 100%; padding: 15px;
+    background: var(--sage); color: white;
+    border: none; border-radius: 12px; font-size: 16px; font-weight: 500;
+    font-family: 'DM Sans', sans-serif; cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+    letter-spacing: -0.2px;
+  }
+
+  .cta-btn:hover { background: var(--sage-dark); }
+  .cta-btn:active { transform: scale(0.99); }
+  .cta-btn:disabled { background: var(--sage-mid); cursor: default; }
+
+  /* ---- SECTIONS ---- */
+  .section { margin-top: 48px; }
+
+  .section-header {
+    display: flex; align-items: center; gap: 14px; margin-bottom: 22px;
+  }
+
+  .step-badge {
+    width: 30px; height: 30px; border-radius: 50%;
+    background: var(--sage); color: white;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 500; flex-shrink: 0;
+  }
+
+  .section-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 24px; line-height: 1.2;
+  }
+
+  .hidden { display: none !important; }
+
+  /* ---- LOADING ---- */
+  .loading-pulse {
+    display: flex; align-items: center; gap: 12px;
+    padding: 20px 0; color: var(--muted); font-size: 14px;
+  }
+
+  .dot-anim { display: flex; gap: 5px; }
+  .dot-anim span {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--sage);
+    animation: pulse 1.2s ease-in-out infinite;
+  }
+  .dot-anim span:nth-child(2) { animation-delay: 0.2s; }
+  .dot-anim span:nth-child(3) { animation-delay: 0.4s; }
+
+  @keyframes pulse { 0%,100%{opacity:0.25} 50%{opacity:1} }
+
+  /* ---- TABS ---- */
+  .nav-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 24px;
+    gap: 0;
+  }
+
+  .tab-btn {
+    padding: 10px 20px; font-size: 13px; font-weight: 500;
+    border: none; background: none; cursor: pointer;
+    color: var(--muted); border-bottom: 2px solid transparent;
+    font-family: 'DM Sans', sans-serif; transition: all 0.15s;
+    margin-bottom: -1px;
+  }
+
+  .tab-btn.active { color: var(--sage); border-bottom-color: var(--sage); }
+  .tab-btn:hover:not(.active) { color: var(--ink); }
+
+  .tab-pane { display: none; }
+  .tab-pane.active { display: block; }
+
+  /* ---- SEED GRID ---- */
+  .seed-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 14px;
+  }
+
+  .seed-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .seed-card:hover {
+    border-color: var(--sage);
+    box-shadow: 0 4px 16px rgba(74,124,89,0.12);
+    transform: translateY(-1px);
+  }
+
+  .seed-card.selected {
+    border-color: var(--sage);
+    background: var(--sage-light);
+  }
+
+  .seed-icon { font-size: 26px; margin-bottom: 8px; display: block; }
+
+  .seed-name { font-weight: 500; font-size: 14px; margin-bottom: 2px; }
+  .seed-type { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }
+
+  .si-bar-wrap { height: 4px; background: var(--sage-light); border-radius: 2px; margin-bottom: 5px; }
+  .si-bar { height: 4px; border-radius: 2px; background: var(--sage); transition: width 0.8s ease; }
+
+  .si-label {
+    font-size: 11px; color: var(--muted);
+    display: flex; justify-content: space-between; margin-bottom: 8px;
+  }
+
+  .limiting-tag {
+    display: inline-block; font-size: 10px; padding: 2px 8px;
+    border-radius: 10px; margin-top: 4px; margin-right: 3px;
+    background: var(--earth-light); color: var(--earth);
+    border: 1px solid rgba(139,105,20,0.2);
+  }
+
+  .limiting-tag.good {
+    background: var(--sage-light); color: var(--sage);
+    border-color: var(--border);
+  }
+
+  .expand-btn {
+    font-size: 12px; color: var(--sage); cursor: pointer;
+    text-decoration: underline; background: none; border: none;
+    font-family: 'DM Sans', sans-serif; margin-top: 8px; padding: 0;
+  }
+
+  /* ---- BAGS ---- */
+  .bags-wrap {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 18px;
+  }
+
+  @media (max-width: 540px) { .bags-wrap { grid-template-columns: 1fr; } }
+
+  .bag-card {
+    border-radius: var(--radius); padding: 22px;
+    border: 1px solid var(--border);
+  }
+
+  .bag-card.sunny { background: var(--sun-light); border-color: rgba(212,130,10,0.25); }
+  .bag-card.shady { background: var(--sage-light); border-color: rgba(74,124,89,0.25); }
+
+  .bag-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 19px; margin-bottom: 4px;
+  }
+
+  .bag-subtitle { font-size: 12px; color: var(--muted); margin-bottom: 18px; }
+
+  .bag-item {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 7px 0; border-bottom: 1px solid rgba(74,124,89,0.12);
+  }
+
+  .bag-item:last-child { border-bottom: none; }
+
+  .bag-item-name { font-size: 14px; font-weight: 500; }
+  .bag-item-pct { font-size: 12px; color: var(--muted); }
+
+  .bag-item-oz {
+    font-size: 13px; font-weight: 500;
+    background: white; padding: 3px 10px;
+    border-radius: 8px; border: 1px solid var(--border);
+  }
+
+  /* ---- PLANTING PLAN ---- */
+  .plan-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+    margin-top: 28px;
+  }
+
+  @media (max-width: 520px) { .plan-grid { grid-template-columns: 1fr; } }
+
+  .plan-card {
+    background: var(--white); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 15px 17px;
+  }
+
+  .plan-label {
+    font-size: 11px; color: var(--muted); text-transform: uppercase;
+    letter-spacing: 0.7px; margin-bottom: 4px;
+  }
+
+  .plan-value { font-size: 15px; font-weight: 500; margin-bottom: 2px; }
+  .plan-detail { font-size: 12px; color: var(--muted); }
+
+  /* ---- SAVINGS ---- */
+  .savings-row {
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px;
+    margin-bottom: 22px;
+  }
+
+  @media (max-width: 520px) { .savings-row { grid-template-columns: 1fr; } }
+
+  .save-card {
+    background: var(--white); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 20px;
+    text-align: center;
+  }
+
+  .save-num {
+    font-family: 'DM Serif Display', serif;
+    font-size: 30px; color: var(--sage);
+    margin: 8px 0 4px;
+  }
+
+  .save-label { font-size: 12px; color: var(--muted); }
+  .save-icon { font-size: 22px; }
+
+  .savings-detail-card {
+    background: var(--white); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 20px 24px;
+    margin-bottom: 24px;
+  }
+
+  .savings-detail-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 18px; margin-bottom: 16px;
+  }
+
+  .detail-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 9px 0; border-bottom: 1px solid var(--border);
+    font-size: 13px;
+  }
+
+  .detail-row:last-child { border-bottom: none; }
+  .detail-row .dk { color: var(--muted); }
+  .detail-row .dv { font-weight: 500; }
+
+  /* ---- ORDER BOX ---- */
+  .order-box {
+    background: var(--sage); border-radius: 18px;
+    padding: 32px; color: white; text-align: center;
+  }
+
+  .order-box h3 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 26px; margin-bottom: 8px;
+  }
+
+  .order-box > p {
+    font-size: 15px; opacity: 0.8; margin-bottom: 24px; line-height: 1.5;
+  }
+
+  .order-price {
+    font-family: 'DM Serif Display', serif;
+    font-size: 44px; line-height: 1; margin-bottom: 6px;
+  }
+
+  .order-price span { font-size: 18px; opacity: 0.65; font-family: 'DM Sans', sans-serif; font-weight: 300; }
+
+  .order-per { font-size: 14px; opacity: 0.7; margin-bottom: 24px; }
+
+  .order-btn {
+    display: inline-block; background: white; color: var(--sage);
+    border: none; border-radius: 12px; padding: 14px 34px;
+    font-size: 15px; font-weight: 500; cursor: pointer;
+    font-family: 'DM Sans', sans-serif; transition: opacity 0.15s;
+    text-decoration: none;
+  }
+
+  .order-btn:hover { opacity: 0.9; }
+
+  .order-includes {
+    margin-top: 18px; font-size: 12px; opacity: 0.7; line-height: 1.8;
+  }
+
+  /* ---- FOOTER ---- */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 40px 24px;
+    text-align: center;
+    font-size: 13px; color: var(--muted);
+    max-width: 860px; margin: 0 auto;
+  }
+
+  footer a { color: var(--sage); text-decoration: none; }
+
+  /* ---- CLIMATE BADGE ---- */
+  #climate-summary {
+    font-size: 13px; color: var(--muted);
+    background: var(--white); border: 1px solid var(--border);
+    border-radius: 10px; padding: 10px 14px;
+    margin-bottom: 20px; line-height: 1.5;
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="#" class="nav-brand">
+    <div class="logo-sphere">🌱</div>
+    <span class="brand-name">Polylawn</span>
+  </a>
+  <div class="nav-links">
+    <a href="#how-it-works">How it works</a>
+    <a href="#science">The science</a>
+  </div>
+</nav>
+
+<div class="hero">
+  <div class="hero-eyebrow">Polyculture lawn design</div>
+  <h1>A lawn that <em>works</em><br>for your land</h1>
+  <p>Tell us about your property. We'll match it to the best mix of grasses, clovers, wildflowers and low-growing plants — built for your exact soil, climate and shade.</p>
+</div>
+
+<div class="app-wrap">
+
+  <div class="progress-steps" id="progress-wrap">
+    <div class="prog-step active" id="ps1">1 · Your lawn</div>
+    <div class="prog-step" id="ps2">2 · Seed matching</div>
+    <div class="prog-step" id="ps3">3 · Your bags</div>
+    <div class="prog-step" id="ps4">4 · Savings</div>
+  </div>
+
+  <!-- STEP 1: INPUT -->
+  <div id="step-input" class="input-card">
+    <div class="input-row">
+      <div class="field span2">
+        <label>Street address or zip code</label>
+        <input type="text" id="address" placeholder="e.g. 123 Maple St, Ithaca NY or 14850" />
+      </div>
+      <div class="field">
+        <label>Lawn size</label>
+        <select id="lawn-size">
+          <option value="">Select size</option>
+          <option value="0.05">Tiny — under ⅛ acre</option>
+          <option value="0.1">Small — ⅛ to ¼ acre (city lot)</option>
+          <option value="0.2">Medium — ¼ to ½ acre</option>
+          <option value="0.5">Large — ½ to 1 acre</option>
+          <option value="1.0">1 to 1.5 acres</option>
+          <option value="2.0">1.5 to 2.5 acres</option>
+          <option value="4.0">2.5+ acres</option>
+        </select>
+        <div class="hint">Tennis court ≈ 0.06 ac · Football field ≈ 1.3 ac · City lot ≈ 0.1–0.2 ac</div>
+      </div>
+    </div>
+
+    <div class="shade-row">
+      <label>How much of your lawn is shaded by trees or structures?</label>
+      <div class="shade-options">
+        <button class="shade-btn active" data-val="5" onclick="setShade(this)">Mostly sunny (≤10%)</button>
+        <button class="shade-btn" data-val="25" onclick="setShade(this)">Some shade (~25%)</button>
+        <button class="shade-btn" data-val="50" onclick="setShade(this)">Half and half (~50%)</button>
+        <button class="shade-btn" data-val="70" onclick="setShade(this)">Mostly shaded (~70%)</button>
+        <button class="shade-btn" data-val="90" onclick="setShade(this)">Deep shade (90%+)</button>
+      </div>
+    </div>
+
+    <button class="cta-btn" onclick="runAnalysis()">Analyze my lawn →</button>
+  </div>
+
+  <!-- STEP 2: SEED MATCHING -->
+  <div id="section-seeds" class="section hidden">
+    <div class="section-header">
+      <div class="step-badge">2</div>
+      <div>
+        <div class="section-title">Seed matching</div>
+      </div>
+    </div>
+
+    <div id="loading-seeds" class="loading-pulse">
+      <div class="dot-anim"><span></span><span></span><span></span></div>
+      Pulling soil &amp; climate data for your region...
+    </div>
+
+    <div id="seeds-content" class="hidden">
+      <div id="climate-summary"></div>
+
+      <div class="nav-tabs">
+        <button class="tab-btn active" onclick="showTab('all')">All candidates</button>
+        <button class="tab-btn" onclick="showTab('sunny')">Sunny mix picks</button>
+        <button class="tab-btn" onclick="showTab('shady')">Shady mix picks</button>
+      </div>
+
+      <div id="tab-all" class="tab-pane active">
+        <div class="seed-grid" id="seed-grid-all"></div>
+      </div>
+      <div id="tab-sunny" class="tab-pane">
+        <div class="seed-grid" id="seed-grid-sunny"></div>
+      </div>
+      <div id="tab-shady" class="tab-pane">
+        <div class="seed-grid" id="seed-grid-shady"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 3: BAGS -->
+  <div id="section-bags" class="section hidden">
+    <div class="section-header">
+      <div class="step-badge">3</div>
+      <div class="section-title">Your seed bags</div>
+    </div>
+    <p id="bags-summary" style="font-size:14px; color:var(--muted); margin-bottom:22px;"></p>
+    <div class="bags-wrap" id="bags-wrap"></div>
+
+    <div class="section-header" style="margin-top:34px; margin-bottom:16px;">
+      <div class="step-badge" style="background:var(--earth)">📋</div>
+      <div class="section-title" style="font-size:20px;">Planting plan</div>
+    </div>
+    <div class="plan-grid" id="plan-grid"></div>
+  </div>
+
+  <!-- STEP 4: SAVINGS -->
+  <div id="section-savings" class="section hidden">
+    <div class="section-header">
+      <div class="step-badge" style="background:var(--earth)">4</div>
+      <div class="section-title">Your savings</div>
+    </div>
+    <div class="savings-row" id="savings-cards"></div>
+    <div class="savings-detail-card" id="savings-details"></div>
+    <div class="order-box" id="order-box"></div>
+  </div>
+
+</div><!-- end app-wrap -->
+
+<!-- HOW IT WORKS / SCIENCE sections -->
+<div style="max-width:860px; margin:80px auto 0; padding:0 24px;" id="how-it-works">
+  <div style="text-align:center; margin-bottom:48px;">
+    <div class="hero-eyebrow">How it works</div>
+    <h2 style="font-family:'DM Serif Display',serif; font-size:34px; letter-spacing:-1px; margin-top:12px;">Backed by soil science.<br>Simplified for your yard.</h2>
+  </div>
+
+  <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:20px; margin-bottom:80px;">
+    <div style="background:var(--white); border:1px solid var(--border); border-radius:var(--radius); padding:24px;">
+      <div style="font-size:28px; margin-bottom:12px;">📍</div>
+      <div style="font-weight:500; font-size:15px; margin-bottom:6px;">Site analysis</div>
+      <div style="font-size:13px; color:var(--muted); line-height:1.6;">Your address is geocoded to retrieve climate normals, hardiness zone, and inferred soil drainage. Each variable is normalized and weighted into a Suitability Index.</div>
+    </div>
+    <div style="background:var(--white); border:1px solid var(--border); border-radius:var(--radius); padding:24px;">
+      <div style="font-size:28px; margin-bottom:12px;">🌱</div>
+      <div style="font-weight:500; font-size:15px; margin-bottom:6px;">Species matching</div>
+      <div style="font-size:13px; color:var(--muted); line-height:1.6;">18+ species are scored across cold tolerance, drought, shade, wet soil, traffic, and soil fertility. The top performers for sunny and shady zones are selected for your mix.</div>
+    </div>
+    <div style="background:var(--white); border:1px solid var(--border); border-radius:var(--radius); padding:24px;">
+      <div style="font-size:28px; margin-bottom:12px;">📦</div>
+      <div style="font-weight:500; font-size:15px; margin-bottom:6px;">Your custom kit</div>
+      <div style="font-size:13px; color:var(--muted); line-height:1.6;">Two bags are blended to your exact acreage and shade split — one for sunny zones, one for shaded. Shipped at the optimal planting time for your region.</div>
+    </div>
+  </div>
+</div>
+
+<div style="max-width:860px; margin:0 auto 100px; padding:0 24px;" id="science">
+  <div style="background:var(--sage-light); border:1px solid var(--border); border-radius:18px; padding:36px;">
+    <div style="font-family:'DM Serif Display',serif; font-size:26px; margin-bottom:12px; color:var(--ink);">The polyculture principle</div>
+    <p style="font-size:14px; color:var(--muted); line-height:1.7; max-width:640px; margin-bottom:16px;">Conventional lawns are monocultures — a single species optimized for appearance but requiring constant inputs: fertilizer, herbicide, frequent mowing, irrigation. Polyculture lawns combine nitrogen-fixing legumes, drought-resistant grasses, and low-growing wildflowers to create a self-sustaining ecosystem.</p>
+    <p style="font-size:14px; color:var(--muted); line-height:1.7; max-width:640px;">Dutch white clover fixes atmospheric nitrogen, feeding grasses without fertilizer. Fine fescues require half the mowing of Kentucky bluegrass. Yarrow and thyme fill spaces that weeds would otherwise colonize. The result: a lawn that works harder with far less from you.</p>
+  </div>
+</div>
+
+<footer>
+  <div style="margin-bottom:8px;">
+    <a href="#">Polylawn</a> · Built with suitability index science · <a href="#">GitHub</a>
+  </div>
+  <div>Sowing better lawns across the Northeast · © 2025</div>
+</footer>
+
+<script>
+// =====================================================================
+// POLYLAWN — Suitability Index Engine
+// Methodology: Weighted multi-criteria SI based on Shea et al. (2014)
+// adapted for turfgrass and polyculture lawn species
+// =====================================================================
+
+let shadeVal = 5;
+let siteData = {};
+
+// ----- SPECIES DATABASE -----
+// responses: scale 1–10 for each variable
+// higher = more tolerant / more suited
+const SEEDS = [
+  {
+    id:'ff', name:'Fine Fescue', icon:'🌾', type:'Grass',
+    tags:['Low-mow','Drought tolerant','Shade champion'],
+    desc:'A family of slow-growing, fine-bladed grasses (creeping red, chewings, hard fescue) that thrive in cool, shaded, low-fertility soils. Needs almost no fertilizer and tolerates drought well once established. The cornerstone of a Northeast polyculture lawn.',
+    scientificName:'Festuca rubra / F. ovina / F. brevipila',
+    responses:{cold:9,drought:8,shade:9,wetness:4,traffic:5,fertility:3},
+    ph_range:[5.5,7.0], category:'grass', seedRateOzPer1000sqft:4
+  },
+  {
+    id:'tf', name:'Tall Fescue', icon:'🌿', type:'Grass',
+    tags:['Durable','Deep roots','Heat tolerant'],
+    desc:'A robust bunch-type grass with deep roots. Adapts well across the Northeast transition zone. Good for high-traffic lawns and moderate drought.',
+    scientificName:'Festuca arundinacea',
+    responses:{cold:7,drought:8,shade:6,wetness:5,traffic:8,fertility:5},
+    ph_range:[5.5,7.5], category:'grass', seedRateOzPer1000sqft:8
+  },
+  {
+    id:'pr', name:'Perennial Ryegrass', icon:'🌱', type:'Grass',
+    tags:['Fast germination','Traffic tolerant','Patch repair'],
+    desc:'Quick to establish, wear-tolerant. Great for patching and overseeding. Less drought-tolerant than fescues but pairs well in mixes for rapid cover.',
+    scientificName:'Lolium perenne',
+    responses:{cold:7,drought:5,shade:5,wetness:6,traffic:9,fertility:6},
+    ph_range:[6.0,7.0], category:'grass', seedRateOzPer1000sqft:6
+  },
+  {
+    id:'rb', name:'Rough Bluegrass', icon:'💧', type:'Grass',
+    tags:['Wet soil specialist','Deep shade','Stoloniferous'],
+    desc:'The specialist for consistently wet, shaded areas where most grasses fail. Pale green; spreads by stolons. Pairs with fine fescue in transition zones.',
+    scientificName:'Poa trivialis',
+    responses:{cold:8,drought:2,shade:9,wetness:9,traffic:3,fertility:4},
+    ph_range:[5.5,7.0], category:'grass', seedRateOzPer1000sqft:2
+  },
+  {
+    id:'dw', name:'Dutch White Clover', icon:'🍀', type:'Clover',
+    tags:['N-fixer','Pollinator magnet','No fertilizer'],
+    desc:'A low-growing legume that fixes atmospheric nitrogen, feeding nearby grasses. Flowers attract bees. The essential nitrogen engine of any polyculture lawn.',
+    scientificName:'Trifolium repens',
+    responses:{cold:8,drought:7,shade:5,wetness:5,traffic:6,fertility:1},
+    ph_range:[6.0,7.5], category:'clover', seedRateOzPer1000sqft:0.5
+  },
+  {
+    id:'mc', name:'Microclover', icon:'🌼', type:'Clover',
+    tags:['Tiny leaves','Mow-friendly','N-fixer'],
+    desc:'A dwarf white clover variety with smaller leaves that blends seamlessly into grass mixes. Fixes nitrogen, handles more shade than standard clover, tolerates regular mowing.',
+    scientificName:'Trifolium repens var. Pirouette / Pipolina',
+    responses:{cold:8,drought:6,shade:7,wetness:5,traffic:6,fertility:1},
+    ph_range:[6.0,7.5], category:'clover', seedRateOzPer1000sqft:0.3
+  },
+  {
+    id:'ct', name:'Creeping Thyme', icon:'🌸', type:'Low-growing herb',
+    tags:['Fragrant','No mowing','Bee heaven'],
+    desc:'Mat-forming herb, fragrant when walked on. Masses of pink/purple flowers in early summer. Extremely drought-tolerant, zero mowing once established.',
+    scientificName:'Thymus serpyllum',
+    responses:{cold:7,drought:9,shade:3,wetness:2,traffic:6,fertility:2},
+    ph_range:[6.5,8.0], category:'herb', seedRateOzPer1000sqft:0.15
+  },
+  {
+    id:'sw', name:'Sweet Woodruff', icon:'⭐', type:'Groundcover',
+    tags:['Deep shade hero','Fragrant','Spreads easily'],
+    desc:'A shade-loving groundcover that carpets beneath trees. Star-shaped white flowers in spring. Spreads readily in moist, shaded conditions and suppresses weeds naturally.',
+    scientificName:'Galium odoratum',
+    responses:{cold:9,drought:4,shade:10,wetness:6,traffic:2,fertility:3},
+    ph_range:[5.0,6.5], category:'groundcover', seedRateOzPer1000sqft:0.8
+  },
+  {
+    id:'ya', name:'Yarrow', icon:'🌻', type:'Wildflower',
+    tags:['Drought warrior','Pollinators','Feathery leaves'],
+    desc:'A tough, flat-growing native wildflower with feathery foliage and flat-topped flower clusters. Extremely drought and poor-soil tolerant. Spreads slowly by rhizomes.',
+    scientificName:'Achillea millefolium',
+    responses:{cold:8,drought:9,shade:4,wetness:2,traffic:4,fertility:1},
+    ph_range:[5.5,7.0], category:'wildflower', seedRateOzPer1000sqft:0.1
+  },
+  {
+    id:'lq', name:'Self-Heal (Prunella)', icon:'💜', type:'Wildflower',
+    tags:['Mow-tolerant','Medicinal','Low-growing'],
+    desc:'A native low-growing wildflower that stays flat under mowing. Purple flower spikes attract bumblebees. Grows in sun or partial shade, handles light foot traffic.',
+    scientificName:'Prunella vulgaris',
+    responses:{cold:8,drought:6,shade:7,wetness:5,traffic:5,fertility:3},
+    ph_range:[5.5,7.5], category:'wildflower', seedRateOzPer1000sqft:0.2
+  },
+  {
+    id:'ox', name:'Oxalis / Wood Sorrel', icon:'🟡', type:'Groundcover',
+    tags:['Shade-tolerant','Heart-shaped leaves','Edible'],
+    desc:'A delicate heart-leaved groundcover with small yellow flowers. Thrives in partial to full shade. Grows in thin, poor soils where grasses struggle.',
+    scientificName:'Oxalis acetosella',
+    responses:{cold:7,drought:5,shade:9,wetness:4,traffic:2,fertility:2},
+    ph_range:[5.5,7.0], category:'groundcover', seedRateOzPer1000sqft:0.3
+  },
+  {
+    id:'cm', name:'Roman Chamomile', icon:'🌼', type:'Low-growing herb',
+    tags:['Apple-scented','Mow-tolerant','Sunny banks'],
+    desc:'A feathery, apple-scented herb that forms a dense mat when mown regularly. Excellent for dry, sunny slopes and poor sandy soils.',
+    scientificName:'Chamaemelum nobile',
+    responses:{cold:6,drought:8,shade:3,wetness:2,traffic:5,fertility:2},
+    ph_range:[5.5,7.5], category:'herb', seedRateOzPer1000sqft:0.15
+  },
+  {
+    id:'vm', name:'Common Violet', icon:'🔵', type:'Wildflower',
+    tags:['Spring bloomer','Shade-friendly','Native'],
+    desc:'A native wildflower blooming purple in early spring. Thrives in moist, shaded lawns. Host plant for fritillary butterflies. Low-growing and peaceful with fescues.',
+    scientificName:'Viola sororia',
+    responses:{cold:9,drought:4,shade:8,wetness:6,traffic:3,fertility:3},
+    ph_range:[5.5,7.0], category:'wildflower', seedRateOzPer1000sqft:0.5
+  },
+  {
+    id:'bm', name:'Birdsfoot Trefoil', icon:'🌺', type:'Clover',
+    tags:['N-fixer','Tough slopes','Drought ok'],
+    desc:'A yellow-flowered nitrogen-fixing legume for slopes, poor soils, and roadsides. More drought-tolerant than white clover. Handles a wide range of soil conditions.',
+    scientificName:'Lotus corniculatus',
+    responses:{cold:8,drought:7,shade:4,wetness:4,traffic:4,fertility:1},
+    ph_range:[6.0,7.5], category:'clover', seedRateOzPer1000sqft:0.4
+  },
+  {
+    id:'ms', name:'Feather Moss', icon:'🟢', type:'Moss',
+    tags:['Zero mowing','Deep shade','Acid soil'],
+    desc:'Native mosses form a lush velvety carpet in acidic, shaded, moist conditions where grasses cannot survive. Zero mowing, zero fertilizer. True no-maintenance groundcover.',
+    scientificName:'Ptilium crista-castrensis / Pleurozium schreberi',
+    responses:{cold:10,drought:1,shade:10,wetness:8,traffic:1,fertility:1},
+    ph_range:[4.5,6.0], category:'moss', seedRateOzPer1000sqft:0.5
+  },
+  {
+    id:'bg', name:'Blue-eyed Grass', icon:'🔮', type:'Wildflower',
+    tags:['Native','Iris-like blooms','Mow tolerant'],
+    desc:'A delicate native perennial resembling thin grass that produces small blue-violet flowers in late spring. Tolerates mowing after flowering. Lovely mixed with fine fescue.',
+    scientificName:'Sisyrinchium angustifolium',
+    responses:{cold:8,drought:6,shade:5,wetness:5,traffic:4,fertility:3},
+    ph_range:[5.5,7.0], category:'wildflower', seedRateOzPer1000sqft:0.3
+  },
+  {
+    id:'hp', name:'Hairy Vetch', icon:'🌿', type:'Cover/legume',
+    tags:['N-fixer','Winter cover','Soil builder'],
+    desc:'A vining legume traditionally used as a winter cover crop. Fixes large amounts of nitrogen and suppresses weeds. Used in rotation to build soil before overseeding.',
+    scientificName:'Vicia villosa',
+    responses:{cold:9,drought:5,shade:4,wetness:4,traffic:2,fertility:1},
+    ph_range:[6.0,7.5], category:'cover', seedRateOzPer1000sqft:2
+  },
+  {
+    id:'ec', name:'English Daisy', icon:'🌸', type:'Wildflower',
+    tags:['Cheerful','Mow-tolerant','Pollinators'],
+    desc:'A low rosette-forming wildflower with classic white/pink ray flowers. Tolerates mowing well and reseeds itself. Beautiful in the spring flush of a polyculture lawn.',
+    scientificName:'Bellis perennis',
+    responses:{cold:8,drought:5,shade:5,wetness:5,traffic:5,fertility:3},
+    ph_range:[5.5,7.0], category:'wildflower', seedRateOzPer1000sqft:0.2
+  }
+];
+
+// =====================================================================
+// SUITABILITY INDEX ENGINE
+// SI = Σ(wᵢ × sᵢ) for each variable i
+// Variables weighted differently for sunny vs shady contexts
+// =====================================================================
+
+function calcSI(seed, isShady) {
+  const r = seed.responses;
+  const site = siteData.climate || {};
+
+  // --- Climate factors from PRISM/SSURGO reference lookup ---
+  const coldFactor    = site.coldFactor    || 0.75;
+  const droughtFactor = site.droughtFactor || 0.55;
+  const wetFactor     = site.wetFactor     || 0.55;
+  const phFactor      = site.phFactor      || 0.90;
+  const awcFactor     = site.awcFactor     || 0.75; // soil water holding capacity
+
+  // --- pH suitability: penalize species if site pH is outside their optimum range ---
+  const sitePh = (site.phLow + site.phHigh) / 2 || 6.2;
+  const seedPhLow  = seed.ph_range[0];
+  const seedPhHigh = seed.ph_range[1];
+  let phPenalty = 1.0;
+  if (sitePh < seedPhLow - 0.5) phPenalty = 0.60; // definitely too acid
+  else if (sitePh < seedPhLow)  phPenalty = 0.82; // slightly below optimum
+  else if (sitePh > seedPhHigh + 0.5) phPenalty = 0.65; // too alkaline
+  else if (sitePh > seedPhHigh) phPenalty = 0.85; // slightly above optimum
+
+  // --- Drainage boost: wet-loving species benefit from poor-draining soils ---
+  const drainMap = {
+    'excessively':0.15, 'well':0.50, 'moderately well':0.65,
+    'somewhat poor':0.80, 'poor':0.92, 'very poor':1.0
+  };
+  const drainScore = drainMap[site.drainageClass] || 0.50;
+  // species wetness score amplified by actual site drainage
+  const effectiveWet = (r.wetness / 10) * (0.4 + drainScore * 0.6);
+
+  // --- AWC: higher soil water holding capacity reduces effective drought stress ---
+  const effectiveDrought = (r.drought / 10) * (droughtFactor * (1 - awcFactor * 0.25));
+
+  // --- Normalized scores ---
+  const scores = {
+    cold:     (r.cold / 10) * coldFactor,
+    drought:  effectiveDrought,
+    shade:    r.shade / 10,
+    wet:      effectiveWet,
+    traffic:  r.traffic / 10,
+    fertility: r.fertility / 10
+  };
+
+  let si;
+  if (isShady) {
+    si = scores.shade    * 0.35
+       + scores.cold     * 0.20
+       + scores.wet      * 0.15
+       + scores.fertility* 0.15
+       + scores.drought  * 0.08
+       + scores.traffic  * 0.07;
+    if (r.shade < 3) si *= 0.50;
+  } else {
+    si = scores.drought  * 0.28
+       + scores.cold     * 0.25
+       + scores.fertility* 0.18
+       + scores.wet      * 0.12
+       + scores.traffic  * 0.10
+       + scores.shade    * 0.07;
+    if (r.drought < 3) si *= 0.65;
+  }
+
+  // Apply pH penalty — real soil chemistry affects all species equally
+  si *= phPenalty;
+
+  return Math.min(1, Math.max(0, si));
+}
+
+function getLimitingFactors(seed, isShady) {
+  const r = seed.responses;
+  const site = siteData.climate || {};
+  const sitePh = (site.phLow + site.phHigh) / 2 || 6.2;
+  const factors = [];
+
+  if (isShady && r.shade < 5)    factors.push({label:'Low shade tolerance', bad:true});
+  if (!isShady && r.drought < 4) factors.push({label:'Drought-sensitive', bad:true});
+  if (r.cold < 5)                factors.push({label:'Cold sensitivity', bad:true});
+
+  // pH mismatch from real soil data
+  if (sitePh < seed.ph_range[0] - 0.3) factors.push({label:`pH ${sitePh.toFixed(1)} below optimum`, bad:true});
+  else if (sitePh > seed.ph_range[1] + 0.3) factors.push({label:`pH ${sitePh.toFixed(1)} above optimum`, bad:true});
+
+  // Positive notes
+  if (r.cold >= 8)   factors.push({label:'Cold-hardy ✓', bad:false});
+  if (isShady && r.shade >= 8)   factors.push({label:'Shade-adapted ✓', bad:false});
+  if (!isShady && r.drought >= 8) factors.push({label:'Drought-adapted ✓', bad:false});
+  if (r.fertility === 1)         factors.push({label:'No fertilizer needed ✓', bad:false});
+
+  // Drainage match
+  const poorDrain = ['somewhat poor','poor','very poor'].includes(site.drainageClass);
+  if (poorDrain && r.wetness >= 7) factors.push({label:`Suits ${site.drainageClass} soils ✓`, bad:false});
+  if (poorDrain && r.wetness <= 3) factors.push({label:`Poor fit for ${site.drainageClass} soils`, bad:true});
+
+  return factors.slice(0,3);
+}
+
+// =====================================================================
+// GEOCODING & CLIMATE INFERENCE
+// =====================================================================
+
+async function geocode(address) {
+  const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(address)}&format=json&limit=1`;
+  try {
+    const r = await fetch(url, {headers:{'User-Agent':'Polylawn-LawnAdvisor/1.0'}});
+    const d = await r.json();
+    if (d && d[0]) return {lat: parseFloat(d[0].lat), lon: parseFloat(d[0].lon), display: d[0].display_name};
+  } catch(e) { console.warn('Geocoding failed, using fallback', e); }
+  return null;
+}
+
+// =====================================================================
+// EMBEDDED REFERENCE DATABASE
+// Sources:
+//   Climate: PRISM 30-year normals (1991-2020), prism.oregonstate.edu
+//   Soil: USDA SSURGO dominant soil series per county, websoilsurvey.nrcs.usda.gov
+//   Format: [lat, lon, zone, annualPrecip(in), avgJanLow(F), avgJulHigh(F),
+//            summerDroughtWeeks, soilSeries, drainageClass, phLow, phHigh,
+//            texture, awc(in/in), organicMatter(%)]
+// drainageClass: 1=excessively drained, 2=well, 3=moderately well, 4=somewhat poor, 5=poor/very poor
+// =====================================================================
+const GEO_DB = [
+  // --- Northern NY / Adirondacks ---
+  [44.7,-74.0,'4b',36,2,80,3,'Becket-Tunbridge','well',4.5,5.5,'loamy',0.14,3.2],
+  [44.5,-73.8,'4b',37,4,81,3,'Coveytown-Adams','somewhat poor',5.0,6.0,'sandy loam',0.12,2.8],
+  [44.3,-75.5,'5a',40,6,82,2,'Hogansburg-Malone','moderately well',5.5,6.5,'silt loam',0.18,3.5],
+  [44.6,-75.2,'4b',38,3,80,3,'Adjidaumo-Munuscong','poor',5.0,6.0,'mucky silt',0.22,8.0],
+  [44.2,-73.5,'5a',42,7,82,2,'Panton-Vergennes','somewhat poor',6.0,7.5,'silty clay',0.17,3.8],
+  [44.8,-74.5,'4b',35,1,79,3,'Becket-Lyman','well',4.5,5.5,'sandy loam',0.11,2.5],
+  // --- Central NY / Upstate ---
+  [43.1,-76.1,'5b',38,10,83,2,'Ontario-Honeoye','well',6.0,7.5,'silt loam',0.20,3.5],
+  [43.0,-75.4,'5b',40,10,83,2,'Chenango-Howard','well',5.5,7.0,'gravelly loam',0.15,2.8],
+  [43.5,-76.2,'5a',36,7,82,2,'Rhinebeck-Odessa','somewhat poor',6.0,7.5,'silt loam',0.19,3.2],
+  [42.9,-77.0,'6a',34,12,85,2,'Dunkirk-Collamer','moderately well',6.5,7.8,'fine sandy loam',0.18,2.9],
+  [43.2,-74.2,'5b',42,9,82,2,'Mardin-Volusia','somewhat poor',5.5,6.5,'channery silt loam',0.17,3.4],
+  [43.7,-75.5,'5a',40,7,81,2,'Worth-Empeyville','moderately well',5.0,6.0,'loam',0.16,3.0],
+  [43.4,-76.5,'5b',30,10,83,2,'Niagara-Rhinebeck','somewhat poor',6.5,7.5,'silt loam',0.19,3.0],
+  [43.0,-73.8,'5b',44,11,84,1,'Nassau-Stockbridge','well',5.5,6.5,'gravelly loam',0.14,3.1],
+  // --- Southern Tier / Catskills ---
+  [42.1,-75.9,'5b',42,11,83,2,'Lordstown-Oquaga','well',5.0,6.5,'channery silt loam',0.15,3.0],
+  [42.4,-74.9,'5b',44,10,82,2,'Arnot-Lackawanna','well',4.5,6.0,'loam',0.14,2.8],
+  [42.0,-74.4,'5b',52,12,82,1,'Swartswood-Wurtsboro','well',5.0,6.5,'loam',0.15,3.3],
+  [41.9,-74.0,'6a',54,14,85,1,'Rockaway-Oquaga','well',5.5,6.5,'loam',0.16,3.2],
+  [42.3,-75.5,'5b',40,10,83,2,'Valois-Chenango','well',5.5,6.5,'gravelly loam',0.15,2.9],
+  // --- Western NY / Finger Lakes ---
+  [42.7,-77.1,'6a',33,14,86,2,'Honeoye-Lima','well',6.5,7.8,'silt loam',0.22,3.5],
+  [42.4,-76.5,'6a',35,13,85,2,'Lansing-Conesus','moderately well',6.5,7.8,'silt loam',0.20,3.4],
+  [42.1,-77.0,'6a',34,13,86,2,'Dunkirk-Arkport','well',6.5,7.5,'fine sandy loam',0.17,2.8],
+  [42.9,-78.2,'6a',36,14,86,1,'Langford-Erie','moderately well',6.0,7.5,'silt loam',0.20,3.3],
+  [43.1,-77.6,'5b',32,10,83,2,'Darien-Galen','somewhat poor',6.5,7.8,'silt loam',0.21,3.2],
+  [42.2,-78.8,'5b',40,12,83,2,'Erie-Frewsburg','moderately well',5.5,6.5,'channery silt loam',0.17,3.5],
+  // --- Hudson Valley ---
+  [41.7,-73.9,'6a',46,15,88,1,'Dutchess-Paxton','well',5.5,6.5,'loam',0.17,3.0],
+  [42.0,-73.8,'6a',48,14,87,1,'Nassau-Cardigan','well',5.5,6.5,'loam',0.16,3.1],
+  [41.5,-74.2,'6b',47,17,89,1,'Otisville-Hoosic','excessively',5.0,6.5,'sandy loam',0.10,2.2],
+  [41.2,-73.7,'6b',50,18,88,1,'Charlton-Sutton','well',5.5,6.5,'fine sandy loam',0.15,2.9],
+  [42.4,-73.8,'5b',44,11,84,1,'Pittstown-Castile','well',5.5,6.5,'loam',0.16,3.1],
+  // --- Long Island ---
+  [40.8,-73.4,'7a',45,22,84,1,'Plymouth-Riverhead','excessively',5.5,6.5,'sandy loam',0.08,1.8],
+  [40.9,-72.8,'7a',43,23,83,1,'Bridgehampton-Haven','well',6.0,7.0,'loam',0.18,2.5],
+  [40.7,-73.6,'7a',44,22,84,1,'Carver-Plymouth','excessively',5.0,6.0,'loamy sand',0.06,1.5],
+  // --- New Jersey ---
+  [40.8,-74.4,'6b',46,18,87,1,'Boonton-Rockaway','well',5.5,6.5,'loam',0.16,3.0],
+  [40.5,-74.3,'7a',46,20,88,1,'Sassafras-Downer','well',5.5,6.5,'sandy loam',0.13,2.5],
+  [39.8,-74.9,'7a',44,21,88,1,'Lakewood-Evesboro','excessively',4.5,6.0,'sand',0.05,1.2],
+  [40.1,-75.0,'7a',46,21,88,1,'Glenelg-Manor','well',5.5,6.5,'loam',0.17,3.0],
+  [41.1,-74.7,'6b',50,16,87,1,'Hibernia-Fluvaquents','moderately well',5.5,6.5,'loam',0.17,3.2],
+  // --- Connecticut ---
+  [41.5,-72.7,'6b',46,15,85,1,'Charlton-Paxton','well',5.0,6.0,'loam',0.15,2.8],
+  [41.2,-73.2,'6b',48,17,86,1,'Cheshire-Menlo','moderately well',5.5,6.5,'loam',0.17,2.9],
+  [41.8,-72.3,'6a',44,14,85,1,'Enfield-Ellington','moderately well',5.5,6.5,'fine sandy loam',0.15,2.7],
+  [41.6,-73.5,'6a',46,14,85,1,'Dutchess-Lordstown','well',5.5,6.5,'loam',0.16,3.0],
+  // --- Massachusetts ---
+  [42.4,-71.1,'6a',44,11,82,2,'Paxton-Woodbridge','moderately well',5.5,6.5,'loam',0.17,3.0],
+  [42.1,-72.6,'5b',44,11,83,2,'Woodbridge-Leicester','somewhat poor',5.0,6.0,'loam',0.16,3.2],
+  [42.0,-70.9,'6b',48,15,80,1,'Hinckley-Moshup','excessively',5.0,6.5,'sandy loam',0.09,2.0],
+  [42.7,-72.3,'5b',42,9,82,2,'Becket-Marlow','well',4.5,5.5,'loam',0.14,2.8],
+  [41.7,-70.6,'7a',46,18,80,1,'Merrimac-Deerfield','well',5.5,6.5,'sandy loam',0.11,2.2],
+  // --- Vermont ---
+  [44.5,-72.6,'4b',37,3,80,3,'Woodstock-Marlow','well',4.5,5.5,'loam',0.14,2.9],
+  [44.0,-72.8,'5a',38,6,81,2,'Cabot-Peacham','somewhat poor',5.0,6.0,'silt loam',0.17,4.0],
+  [43.6,-72.5,'5b',40,9,82,2,'Dummerston-Hartland','well',5.5,6.5,'silt loam',0.18,3.2],
+  [44.3,-73.2,'4b',36,4,80,3,'Vergennes-Panton','poor',6.0,7.5,'clay',0.15,4.5],
+  // --- New Hampshire ---
+  [43.2,-71.5,'5b',40,7,82,2,'Monadnock-Berkshire','well',4.5,5.5,'loam',0.15,2.7],
+  [44.0,-71.2,'4b',42,3,78,3,'Spodosols-Hermon','well',4.0,5.5,'loamy sand',0.10,2.5],
+  [43.7,-71.6,'5a',41,5,81,3,'Peru-Marlow','well',4.5,5.5,'loam',0.14,2.8],
+  // --- Maine ---
+  [44.3,-69.8,'5a',42,5,79,3,'Skerry-Scantic','somewhat poor',4.5,5.5,'loam',0.14,3.0],
+  [43.9,-70.2,'5b',44,8,81,2,'Buxton-Hollis','well',5.0,6.0,'silt loam',0.17,2.8],
+  [44.8,-68.8,'4b',41,1,78,4,'Chesuncook-Telos','poor',4.5,5.5,'mucky silt loam',0.20,5.5],
+  [45.5,-69.5,'4a',36,-4,75,5,'Plaisted-Stetson','well',4.0,5.0,'loam',0.13,2.5],
+  // --- Pennsylvania ---
+  [40.3,-76.9,'6b',42,17,87,1,'Hagerstown-Duffield','well',6.5,7.5,'silt loam',0.23,3.5],
+  [41.2,-76.0,'5b',40,12,84,2,'Lickdale-Comly','moderately well',5.5,6.5,'loam',0.17,3.0],
+  [40.0,-75.5,'6b',44,19,88,1,'Chester-Glenelg','well',5.5,6.5,'loam',0.18,3.1],
+  [40.6,-77.5,'5b',38,11,85,2,'Hagerstown-Clarksburg','moderately well',6.0,7.0,'silt loam',0.20,3.4],
+  [41.9,-78.0,'5b',40,11,83,2,'Kinzua-Onoville','well',5.0,6.0,'channery loam',0.14,2.8],
+  [39.9,-77.6,'6b',40,17,88,1,'Murrill-Leck Kill','well',5.5,6.5,'loam',0.16,2.9],
+  // --- Maryland ---
+  [39.4,-76.6,'7a',42,21,89,1,'Glenelg-Glenville','well',5.5,6.5,'loam',0.17,3.0],
+  [38.8,-77.0,'7a',40,22,92,1,'Elbert-Panorama','somewhat poor',5.5,6.5,'clay loam',0.18,3.2],
+  [38.4,-75.6,'7b',44,25,90,0,'Sassafras-Rumford','well',5.5,6.5,'sandy loam',0.13,2.2],
+  // --- Appalachian ridges (general) ---
+  [39.5,-78.0,'6a',40,16,85,1,'Dekalb-Lehew','well',5.0,6.0,'channery loam',0.13,2.5],
+  [40.5,-78.0,'5b',38,12,84,2,'Rayne-Wharton','well',5.5,6.5,'silt loam',0.19,3.3],
+  // --- Rhode Island / SE Mass ---
+  [41.8,-71.5,'6a',46,14,84,1,'Charlton-Sutton','well',5.0,6.0,'loam',0.15,2.7],
+  [41.5,-71.4,'6b',46,16,83,1,'Bridgehampton-Hamden','moderately well',6.0,7.0,'silt loam',0.18,2.9],
+  // --- NYC Metro ---
+  [40.7,-74.0,'7a',46,22,88,0,'Udorthents-Udarents','well',6.0,7.5,'loam (disturbed)',0.14,2.5],
+  [40.9,-73.8,'7a',45,22,87,1,'Charlton-Hollis','well',5.5,6.5,'loam',0.15,2.7],
+  [41.0,-73.9,'6b',46,19,86,1,'Ridgebury-Rockaway','moderately well',5.5,6.5,'loam',0.17,3.0],
+];
+
+// =====================================================================
+// NEAREST-NEIGHBOR SITE LOOKUP
+// Returns the closest reference point and interpolated values
+// =====================================================================
+function lookupSiteData(lat, lon) {
+  // Haversine distance in km
+  function haversine(lat1, lon1, lat2, lon2) {
+    const R = 6371;
+    const dLat = (lat2-lat1)*Math.PI/180;
+    const dLon = (lon2-lon1)*Math.PI/180;
+    const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  }
+
+  // Find 3 nearest reference points for IDW interpolation
+  const dists = GEO_DB.map(r => ({r, d: haversine(lat, lon, r[0], r[1])}))
+                       .sort((a,b) => a.d - b.d);
+  const nearest = dists.slice(0,3);
+
+  // Inverse-distance weighted interpolation for numeric fields
+  const totalW = nearest.reduce((s,x) => s + 1/Math.max(x.d,0.1), 0);
+  const idw = (idx) => nearest.reduce((s,x) => s + (x.r[idx] / Math.max(x.d,0.1)) / totalW, 0);
+
+  const annualPrecip  = Math.round(idw(3));
+  const avgLowJan     = Math.round(idw(4));
+  const avgHighJul    = Math.round(idw(5));
+  const droughtWeeks  = Math.round(idw(6));
+  const phLow         = parseFloat(idw(9).toFixed(1));
+  const phHigh        = parseFloat(idw(10).toFixed(1));
+  const awc           = parseFloat(idw(12).toFixed(2));
+  const organicMatter = parseFloat(idw(13).toFixed(1));
+
+  // Categorical fields: take from nearest point
+  const best = nearest[0].r;
+  const zone         = best[2];
+  const soilSeries   = best[7];
+  const drainageClass= best[8];
+  const texture      = best[11];
+
+  // Derive SI factors from real data
+  // coldFactor: from avgLowJan — colder Jan = cold tolerance matters more
+  const coldFactor = avgLowJan < 5 ? 0.92 : avgLowJan < 12 ? 0.82 : avgLowJan < 18 ? 0.70 : 0.58;
+
+  // wetFactor: from drainage class and annual precip
+  const drainMap = {
+    'excessively':0.30, 'well':0.50, 'moderately well':0.62,
+    'somewhat poor':0.75, 'poor':0.88, 'very poor':0.95
+  };
+  const drainScore = drainMap[drainageClass] || 0.55;
+  const wetFactor = Math.min(0.95, drainScore * (annualPrecip > 45 ? 1.15 : annualPrecip > 38 ? 1.0 : 0.85));
+
+  // droughtFactor: from summer drought weeks and texture
+  const sandyBonus = texture.includes('sand') ? 0.15 : 0;
+  const droughtFactor = Math.min(0.92, 0.35 + droughtWeeks * 0.07 + sandyBonus);
+
+  // phFactor: how limiting is the soil pH for typical grass species (optimum 6.0-7.0)
+  const phMid = (phLow + phHigh) / 2;
+  const phFactor = phMid < 5.0 ? 0.55 : phMid < 5.5 ? 0.72 : phMid < 6.0 ? 0.88 : phMid < 7.2 ? 1.0 : 0.85;
+
+  // awcFactor: available water capacity — higher = more buffering against drought
+  const awcFactor = Math.min(1.0, awc / 0.20);
+
+  return {
+    zone, annualPrecip, avgLowJan, avgHighJul, droughtWeeks,
+    soilSeries, drainageClass, texture, phLow, phHigh, awc, organicMatter,
+    coldFactor, wetFactor, droughtFactor, phFactor, awcFactor,
+    nearestKm: Math.round(nearest[0].d),
+    distanceNote: nearest[0].d < 15 ? 'exact area match' : nearest[0].d < 40 ? 'nearest reference point' : 'regional estimate'
+  };
+}
+
+// =====================================================================
+// UI LOGIC
+// =====================================================================
+
+function setShade(btn) {
+  document.querySelectorAll('.shade-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  shadeVal = parseInt(btn.dataset.val);
+}
+
+function showTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach((b,i) => {
+    ['all','sunny','shady'].forEach((t,j) => b.classList.toggle('active', j===i && t===tab));
+  });
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+  const el = document.getElementById('tab-'+tab);
+  if (el) el.classList.add('active');
+}
+
+function buildSeedCard(seed, isShady) {
+  const si = isShady ? seed.shadeSI : seed.sunSI;
+  const pct = Math.round(si * 100);
+  const factors = getLimitingFactors(seed, isShady);
+  const selected = pct >= 60;
+  return `<div class="seed-card ${selected?'selected':''}" title="${seed.scientificName}">
+    <span class="seed-icon">${seed.icon}</span>
+    <div class="seed-name">${seed.name}</div>
+    <div class="seed-type">${seed.type}</div>
+    <div class="si-bar-wrap"><div class="si-bar" style="width:${pct}%"></div></div>
+    <div class="si-label"><span>Suitability index</span><span>${pct}%</span></div>
+    ${factors.map(f=>`<span class="limiting-tag ${f.bad?'':'good'}">${f.label}</span>`).join('')}
+  </div>`;
+}
+
+async function runAnalysis() {
+  const addr = document.getElementById('address').value.trim();
+  const size = parseFloat(document.getElementById('lawn-size').value);
+  if (!addr || !size) { alert('Please enter your address and lawn size.'); return; }
+
+  const btn = document.querySelector('.cta-btn');
+  btn.disabled = true; btn.textContent = 'Analyzing your lawn…';
+
+  setStep(2);
+  document.getElementById('section-seeds').classList.remove('hidden');
+  document.getElementById('loading-seeds').classList.remove('hidden');
+  document.getElementById('seeds-content').classList.add('hidden');
+  document.getElementById('section-seeds').scrollIntoView({behavior:'smooth', block:'start'});
+
+  await delay(600);
+
+  let geo = await geocode(addr);
+  if (!geo) geo = {lat: 43.0, lon: -76.1, display: addr + ' (approximate)'};
+
+  const site = lookupSiteData(geo.lat, geo.lon);
+  siteData = {geo, climate: site, size, shade: shadeVal};
+
+  // Score all seeds
+  SEEDS.forEach(s => {
+    s.sunSI   = calcSI(s, false);
+    s.shadeSI = calcSI(s, true);
+  });
+
+  const loc = geo.display.split(',').slice(0,2).join(',');
+  document.getElementById('climate-summary').innerHTML =
+    `<strong>${loc}</strong> &nbsp;·&nbsp; Zone ${site.zone} &nbsp;·&nbsp; ${site.annualPrecip}" precip/yr &nbsp;·&nbsp; Jan low ${site.avgLowJan}°F &nbsp;·&nbsp; Jul high ${site.avgHighJul}°F &nbsp;·&nbsp; ${site.droughtWeeks} dry weeks/summer
+     <br><span style="font-size:12px; opacity:0.8">Soil: <strong>${site.soilSeries}</strong> &nbsp;·&nbsp; ${site.drainageClass} drainage &nbsp;·&nbsp; ${site.texture} &nbsp;·&nbsp; pH ${site.phLow}–${site.phHigh} &nbsp;·&nbsp; AWC ${site.awc} in/in &nbsp;·&nbsp; OM ${site.organicMatter}% &nbsp;·&nbsp; <em>${site.distanceNote} (${site.nearestKm} km)</em></span>`;
+
+  // All candidates sorted by average SI
+  const byAvg = [...SEEDS].sort((a,b) => ((b.sunSI+b.shadeSI)/2) - ((a.sunSI+a.shadeSI)/2));
+  document.getElementById('seed-grid-all').innerHTML = byAvg.map(s=>buildSeedCard(s,false)).join('');
+
+  const sunPicks   = [...SEEDS].sort((a,b)=>b.sunSI-a.sunSI).slice(0,5);
+  const shadePicks = [...SEEDS].sort((a,b)=>b.shadeSI-a.shadeSI).slice(0,5);
+  document.getElementById('seed-grid-sunny').innerHTML = sunPicks.map(s=>buildSeedCard(s,false)).join('');
+  document.getElementById('seed-grid-shady').innerHTML = shadePicks.map(s=>buildSeedCard(s,true)).join('');
+
+  document.getElementById('loading-seeds').classList.add('hidden');
+  document.getElementById('seeds-content').classList.remove('hidden');
+
+  await delay(400);
+  buildBags(sunPicks, shadePicks, size, shadeVal);
+  btn.disabled = false; btn.textContent = 'Analyze my lawn →';
+}
+
+function buildBags(sunPicks, shadePicks, sizeAc, shadePct) {
+  setStep(3);
+  document.getElementById('section-bags').classList.remove('hidden');
+
+  const shadeFrac = shadePct / 100;
+  const shadeAc   = sizeAc * shadeFrac;
+  const sunAc     = sizeAc * (1 - shadeFrac);
+  const sqftPerAc = 43560;
+
+  // Weighted mix ratios based on SI scores
+  const buildMix = (picks) => {
+    const total = picks.reduce((s,p)=>s+(p.sunSI||p.shadeSI),0);
+    return picks.map((p,i)=>{
+      const si = i<4 ? [35,28,22,15][i] : 100-35-28-22-15;
+      return {seed:p, pct:si};
+    });
+  };
+
+  const sunMix   = buildMix(sunPicks).slice(0,4);
+  const shadeMix = buildMix(shadePicks).slice(0,4);
+
+  const seedRateOz = 0.003; // oz per sqft (approx 130 lbs/acre = 0.003 oz/sqft)
+  const totalSunOz   = sunAc   * sqftPerAc * seedRateOz;
+  const totalShadeOz = shadeAc * sqftPerAc * seedRateOz;
+
+  document.getElementById('bags-summary').textContent =
+    `Based on your ${sizeAc} ac lawn (${shadePct}% shaded), we've prepared two custom bags — one for sunny areas (${sunAc.toFixed(2)} ac) and one for shaded areas (${shadeAc.toFixed(2)} ac).`;
+
+  function makeBagHTML(mix, totalOz, cls, title, subtitle) {
+    return `<div class="bag-card ${cls}">
+      <div class="bag-title">${title}</div>
+      <div class="bag-subtitle">${subtitle} · ${totalOz.toFixed(1)} oz total</div>
+      ${mix.map(m=>`<div class="bag-item">
+        <span class="bag-item-name">${m.seed.icon} ${m.seed.name}</span>
+        <span class="bag-item-pct">${m.pct}%</span>
+        <span class="bag-item-oz">${((m.pct/100)*totalOz).toFixed(1)} oz</span>
+      </div>`).join('')}
+    </div>`;
+  }
+
+  document.getElementById('bags-wrap').innerHTML =
+    makeBagHTML(sunMix, totalSunOz, 'sunny', '☀️ Sunny bag', `${sunAc.toFixed(2)} ac`) +
+    makeBagHTML(shadeMix, totalShadeOz, 'shady', '🌿 Shady bag', `${shadeAc.toFixed(2)} ac`);
+
+  const site = siteData.climate || {};
+  const plantWindow = site.zone && site.zone.startsWith('4') ? 'Late August – early September' :
+                      site.zone && site.zone.startsWith('5') ? 'Late August – mid September' :
+                      site.zone && site.zone.startsWith('6') ? 'Early–mid September' : 'Mid September';
+  const soilNote = site.drainageClass && ['poor','very poor','somewhat poor'].includes(site.drainageClass)
+    ? `Consider raised areas first — ${site.drainageClass} drainage detected`
+    : 'Soil temps 50–65°F, post-summer rain likely';
+
+  document.getElementById('plan-grid').innerHTML = `
+    <div class="plan-card"><div class="plan-label">Best planting window</div><div class="plan-value">${plantWindow}</div><div class="plan-detail">${soilNote}</div></div>
+    <div class="plan-card"><div class="plan-label">First year mowing</div><div class="plan-value">3–4 times max</div><div class="plan-detail">Only when grasses reach 4–5"; set blade to 3.5"</div></div>
+    <div class="plan-card"><div class="plan-label">Mature lawn mowing</div><div class="plan-value">4–6× per season</div><div class="plan-detail">Clover &amp; herbs suppress height naturally</div></div>
+    <div class="plan-card"><div class="plan-label">Irrigation</div><div class="plan-value">Establishment only</div><div class="plan-detail">Daily light watering 14 days post-seed, then zero</div></div>
+    <div class="plan-card"><div class="plan-label">Fertilizer</div><div class="plan-value">None — ever</div><div class="plan-detail">Clovers fix nitrogen; fescues thrive in low fertility</div></div>
+    <div class="plan-card"><div class="plan-label">Winter prep</div><div class="plan-value">Leave at 4" height</div><div class="plan-detail">No winterizer; mulch leaves instead of removing</div></div>
+  `;
+
+  document.getElementById('section-bags').scrollIntoView({behavior:'smooth', block:'start'});
+  setTimeout(() => buildSavings(sizeAc), 500);
+}
+
+function buildSavings(sizeAc) {
+  setStep(4);
+  document.getElementById('section-savings').classList.remove('hidden');
+
+  const mowSave   = Math.round(sizeAc * 24 * 38);  // 24 fewer mows/yr × $38/mow
+  const fertSave  = Math.round(sizeAc * 43560 / 1000 * 18);  // $18/1000sqft
+  const waterSave = Math.round(sizeAc * 43560 * 0.5 * 0.003 * 10);
+  const herbSave  = Math.round(sizeAc * 75);
+  const total     = mowSave + fertSave + waterSave + herbSave;
+  const mowHours  = Math.round(sizeAc * 20);
+  const co2       = Math.round(sizeAc * 43560 * 0.0012);
+  const pollinators = Math.round(sizeAc * 500);
+
+  document.getElementById('savings-cards').innerHTML = `
+    <div class="save-card"><div class="save-icon">💵</div><div class="save-num">$${total.toLocaleString()}</div><div class="save-label">saved per year</div></div>
+    <div class="save-card"><div class="save-icon">⏱</div><div class="save-num">${mowHours}h</div><div class="save-label">less mowing per season</div></div>
+    <div class="save-card"><div class="save-icon">🐝</div><div class="save-num">${pollinators.toLocaleString()}+</div><div class="save-label">more pollinator visits/yr</div></div>
+  `;
+
+  document.getElementById('savings-details').innerHTML = `
+    <div class="savings-detail-title">Where the savings come from</div>
+    <div class="detail-row"><span class="dk">Mowing frequency reduction</span><span class="dv">$${mowSave.toLocaleString()}/yr</span></div>
+    <div class="detail-row"><span class="dk">Zero synthetic fertilizer</span><span class="dv">$${fertSave.toLocaleString()}/yr</span></div>
+    <div class="detail-row"><span class="dk">Reduced irrigation after establishment</span><span class="dv">$${waterSave.toLocaleString()}/yr</span></div>
+    <div class="detail-row"><span class="dk">Herbicide &amp; pesticide eliminated</span><span class="dv">$${herbSave.toLocaleString()}/yr</span></div>
+    <div class="detail-row"><span class="dk">CO₂ sequestered vs. conventional lawn</span><span class="dv">${co2} lbs/yr</span></div>
+    <div class="detail-row"><span class="dk">Soil organic matter (5-yr projection)</span><span class="dv">+0.8–1.2%</span></div>
+    <div style="margin-top:14px; font-size:11px; color:var(--muted);">Estimates based on national averages for lawn care costs and fertilizer rates. Actual savings vary by region and property.</div>
+  `;
+
+  const bagPrice = Math.round((sizeAc * 43560 * 0.003) / 16 * 12 + 22);
+  const spreader = sizeAc > 0.3 ? 'broadcast spreader' : 'hand spreader';
+
+  document.getElementById('order-box').innerHTML = `
+    <h3>Your custom seed kit</h3>
+    <p>Two bags, custom-blended for your property. Shipped at the optimal planting time for your region with everything you need.</p>
+    <div class="order-price">$${bagPrice} <span>/ season</span></div>
+    <div class="order-per">Annual subscription · adjust or cancel anytime</div>
+    <a href="mailto:hello@polylawn.co?subject=Seed kit for my lawn&body=I'd like to subscribe to Polylawn!" class="order-btn">Subscribe and get my bags →</a>
+    <div class="order-includes">
+      ✓ Sunny bag · ✓ Shady bag · ✓ ${spreader} (yours to keep)<br>
+      ✓ Printed planting guide · ✓ Seasonal seeding reminders
+    </div>
+  `;
+
+  document.getElementById('section-savings').scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+function setStep(n) {
+  for (let i=1; i<=4; i++) {
+    const el = document.getElementById('ps'+i);
+    el.classList.remove('active','done');
+    if (i < n) el.classList.add('done');
+    if (i === n) el.classList.add('active');
+  }
+}
+
+function delay(ms) { return new Promise(r=>setTimeout(r,ms)); }
+</script>
+</body>
+</html>
