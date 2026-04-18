@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Polylawn — A lawn that works for your land</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --sage:#4a7c59;--sage-light:#e8f0eb;--sage-mid:#8fb89a;--sage-dark:#3d6b4a;
+  --earth:#8b6914;--earth-light:#f5edd6;
+  --cream:#faf8f3;--ink:#1c1f1a;--muted:#6b7068;
+  --border:rgba(74,124,89,0.18);--white:#ffffff;
+  --sun:#d4820a;--sun-light:#fff3dc;
+  --radius:14px;--radius-lg:20px;
+}
+html{scroll-behavior:smooth}
+body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);line-height:1.6;min-height:100vh}
+nav{position:sticky;top:0;z-index:100;background:rgba(250,248,243,0.93);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:58px}
+.nav-brand{display:flex;align-items:center;gap:10px;text-decoration:none}
+.logo-sphere{width:36px;height:36px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#7ec89a,#2d6e45);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.brand-name{font-family:'DM Serif Display',serif;font-size:20px;color:var(--sage);letter-spacing:-0.3px}
+.nav-links{display:flex;gap:24px}
+.nav-links a{font-size:13px;font-weight:500;color:var(--muted);text-decoration:none;transition:color .15s}
+.nav-links a:hover{color:var(--sage)}
+.hero{padding:72px 24px 52px;text-align:center;max-width:860px;margin:0 auto}
+.hero-eyebrow{display:inline-block;font-size:12px;font-weight:500;color:var(--sage);text-transform:uppercase;letter-spacing:1.2px;background:var(--sage-light);padding:5px 14px;border-radius:20px;border:1px solid var(--border);margin-bottom:24px}
+.hero h1{font-family:'DM Serif Display',serif;font-size:clamp(36px,6vw,52px);line-height:1.1;color:var(--ink);letter-spacing:-1.5px;margin-bottom:18px}
+.hero h1 em{color:var(--sage);font-style:italic}
+.hero p{font-size:17px;color:var(--muted);line-height:1.65;max-width:520px;margin:0 auto 48px}
+.app-wrap{max-width:860px;margin:0 auto;padding:0 24px 100px}
+.progress-steps{display:flex;border-radius:var(--radius);overflow:hidden;border:1px solid var(--border);margin-bottom:40px;background:var(--white)}
+.prog-step{flex:1;padding:11px 8px;text-align:center;font-size:12px;font-weight:500;color:var(--muted);background:var(--white);transition:all .3s;border-right:1px solid var(--border)}
+.prog-step:last-child{border-right:none}
+.prog-step.done{background:var(--sage-light);color:var(--sage)}
+.prog-step.active{background:var(--sage);color:white}
+.input-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius-lg);padding:32px;box-shadow:0 4px 32px rgba(74,124,89,0.08)}
+.input-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;margin-bottom:24px}
+@media(max-width:640px){.input-row{grid-template-columns:1fr}.input-row .span2{grid-column:1}}
+.span2{grid-column:span 2}
+.field label{display:block;font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:7px}
+.field input,.field select{width:100%;padding:11px 13px;border:1px solid var(--border);border-radius:10px;font-size:14px;font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);transition:border-color .2s,box-shadow .2s;outline:none;-webkit-appearance:none;appearance:none}
+.field select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b7068' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
+.field input:focus,.field select:focus{border-color:var(--sage);box-shadow:0 0 0 3px rgba(74,124,89,.1)}
+.field .hint{font-size:11px;color:var(--muted);margin-top:5px;line-height:1.4}
+.shade-row{margin-bottom:24px}
+.shade-row>label{display:block;font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px}
+.shade-options{display:flex;gap:8px;flex-wrap:wrap}
+.shade-btn{padding:8px 15px;border-radius:22px;font-size:13px;border:1px solid var(--border);background:var(--cream);color:var(--muted);cursor:pointer;transition:all .15s;font-family:'DM Sans',sans-serif}
+.shade-btn:hover{border-color:var(--sage);color:var(--sage);background:var(--sage-light)}
+.shade-btn.active{background:var(--sage);color:white;border-color:var(--sage)}
+.cta-btn{width:100%;padding:15px;background:var(--sage);color:white;border:none;border-radius:12px;font-size:16px;font-weight:500;font-family:'DM Sans',sans-serif;cursor:pointer;transition:background .2s,transform .1s;letter-spacing:-.2px}
+.cta-btn:hover{background:var(--sage-dark)}
+.cta-btn:active{transform:scale(0.99)}
+.cta-btn:disabled{background:var(--sage-mid);cursor:default}
+.section{margin-top:48px}
+.section-header{display:flex;align-items:center;gap:14px;margin-bottom:22px}
+.step-badge{width:30px;height:30px;border-radius:50%;background:var(--sage);color:white;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;flex-shrink:0}
+.section-title{font-family:'DM Serif Display',serif;font-size:24px;line-height:1.2}
+.hidden{display:none!important}
+.loading-pulse{display:flex;align-items:center;gap:12px;padding:20px 0;color:var(--muted);font-size:14px}
+.dot-anim{display:flex;gap:5px}
+.dot-anim span{width:7px;height:7px;border-radius:50%;background:var(--sage);animation:pulse 1.2s ease-in-out infinite}
+.dot-anim span:nth-child(2){animation-delay:.2s}
+.dot-anim span:nth-child(3){animation-delay:.4s}
+@keyframes pulse{0%,100%{opacity:.25}50%{opacity:1}}
+.nav-tabs{display:flex;border-bottom:1px solid var(--border);margin-bottom:24px}
+.tab-btn{padding:10px 20px;font-size:13px;font-weight:500;border:none;background:none;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;font-family:'DM Sans',sans-serif;transition:all .15s;margin-bottom:-1px}
+.tab-btn.active{color:var(--sage);border-bottom-color:var(--sage)}
+.tab-btn:hover:not(.active){color:var(--ink)}
+.tab-pane{display:none}
+.tab-pane.active{display:block}
+.seed-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px}
+.seed-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:16px;cursor:pointer;transition:all .2s}
+.seed-card:hover{border-color:var(--sage);box-shadow:0 4px 16px rgba(74,124,89,.12);transform:translateY(-1px)}
+.seed-card.selected{border-color:var(--sage);background:var(--sage-light)}
+.seed-icon{font-size:26px;margin-bottom:8px;display:block}
+.seed-name{font-weight:500;font-size:14px;margin-bottom:2px}
+.seed-sci{font-size:11px;color:var(--muted);font-style:italic;margin-bottom:4px}
+.seed-type{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px}
+.si-bar-wrap{height:4px;background:var(--sage-light);border-radius:2px;margin-bottom:5px}
+.si-bar{height:4px;border-radius:2px;background:var(--sage);transition:width .8s ease}
+.si-label{font-size:11px;color:var(--muted);display:flex;justify-content:space-between;margin-bottom:8px}
+.limiting-tag{display:inline-block;font-size:10px;padding:2px 8px;border-radius:10px;margin-top:4px;margin-right:3px;background:var(--earth-light);color:var(--earth);border:1px solid rgba(139,105,20,.2)}
+.limiting-tag.good{background:var(--sage-light);color:var(--sage);border-color:var(--border)}
+.seed-tag{display:inline-block;font-size:10px;padding:2px 7px;border-radius:8px;margin-right:3px;margin-bottom:3px;background:var(--cream);color:var(--muted);border:1px solid var(--border)}
+.seed-desc{font-size:11px;color:var(--muted);line-height:1.5;margin:6px 0 4px;display:none}
+.seed-card.expanded .seed-desc{display:block}
+.var-breakdown{display:none;margin-top:8px;border-top:1px solid var(--border);padding-top:8px}
+.seed-card.expanded .var-breakdown{display:block}
+.var-row{display:flex;align-items:center;gap:6px;margin-bottom:4px}
+.var-label{font-size:10px;color:var(--muted);width:58px;flex-shrink:0;text-align:right}
+.var-bar-wrap{flex:1;height:3px;background:var(--sage-light);border-radius:2px}
+.var-bar-fill{height:3px;border-radius:2px;background:var(--sage)}
+.var-val{font-size:10px;color:var(--muted);width:18px;text-align:right;flex-shrink:0}
+.expand-btn{display:block;font-size:11px;color:var(--sage);background:none;border:none;padding:4px 0 0;cursor:pointer;font-family:'DM Sans',sans-serif;text-align:left}
+.start-over{display:block;margin:28px auto 0;background:none;border:1px solid var(--border);border-radius:10px;padding:9px 20px;font-size:13px;color:var(--muted);cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s}
+.start-over:hover{border-color:var(--sage);color:var(--sage)}
+#climate-summary{font-size:13px;color:var(--muted);background:var(--white);border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin-bottom:20px;line-height:1.7}
+#climate-summary strong{color:var(--ink)}
+.site-row{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:8px}
+.site-chip{font-size:12px;color:var(--muted)}
+.site-chip b{color:var(--ink);font-weight:500}
+.bags-wrap{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media(max-width:540px){.bags-wrap{grid-template-columns:1fr}}
+.bag-card{border-radius:var(--radius);padding:22px;border:1px solid var(--border)}
+.bag-card.sunny{background:var(--sun-light);border-color:rgba(212,130,10,.25)}
+.bag-card.shady{background:var(--sage-light);border-color:rgba(74,124,89,.25)}
+.bag-title{font-family:'DM Serif Display',serif;font-size:19px;margin-bottom:4px}
+.bag-subtitle{font-size:12px;color:var(--muted);margin-bottom:18px}
+.bag-item{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid rgba(74,124,89,.12)}
+.bag-item:last-child{border-bottom:none}
+.bag-item-name{font-size:14px;font-weight:500}
+.bag-item-pct{font-size:12px;color:var(--muted)}
+.bag-item-oz{font-size:13px;font-weight:500;background:white;padding:3px 10px;border-radius:8px;border:1px solid var(--border)}
+.plan-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:28px}
+@media(max-width:520px){.plan-grid{grid-template-columns:1fr}}
+.plan-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:15px 17px}
+.plan-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-bottom:4px}
+.plan-value{font-size:15px;font-weight:500;margin-bottom:2px}
+.plan-detail{font-size:12px;color:var(--muted)}
+.savings-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:22px}
+@media(max-width:520px){.savings-row{grid-template-columns:1fr}}
+.save-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:20px;text-align:center}
+.save-num{font-family:'DM Serif Display',serif;font-size:30px;color:var(--sage);margin:8px 0 4px}
+.save-label{font-size:12px;color:var(--muted)}
+.save-icon{font-size:22px}
+.savings-detail-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:20px 24px;margin-bottom:24px}
+.savings-detail-title{font-family:'DM Serif Display',serif;font-size:18px;margin-bottom:16px}
+.detail-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);font-size:13px}
+.detail-row:last-child{border-bottom:none}
+.detail-row .dk{color:var(--muted)}
+.detail-row .dv{font-weight:500}
+.order-box{background:var(--sage);border-radius:18px;padding:32px;color:white;text-align:center}
+.order-box h3{font-family:'DM Serif Display',serif;font-size:26px;margin-bottom:8px}
+.order-box>p{font-size:15px;opacity:.8;margin-bottom:24px;line-height:1.5}
+.order-price{font-family:'DM Serif Display',serif;font-size:44px;line-height:1;margin-bottom:6px}
+.order-price span{font-size:18px;opacity:.65;font-family:'DM Sans',sans-serif;font-weight:300}
+.order-per{font-size:14px;opacity:.7;margin-bottom:24px}
+.order-btn{display:inline-block;background:white;color:var(--sage);border:none;border-radius:12px;padding:14px 34px;font-size:15px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;transition:opacity .15s;text-decoration:none}
+.order-btn:hover{opacity:.9}
+.order-includes{margin-top:18px;font-size:12px;opacity:.7;line-height:1.8}
+.info-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;margin-bottom:80px}
+@media(max-width:600px){.info-grid{grid-template-columns:1fr}}
+.info-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:24px}
+footer{border-top:1px solid var(--border);padding:40px 24px;text-align:center;font-size:13px;color:var(--muted);max-width:860px;margin:0 auto}
+footer a{color:var(--sage);text-decoration:none}
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="#" class="nav-brand">
+    <div class="logo-sphere">🌱</div>
+    <span class="brand-name">Polylawn</span>
+  </a>
+  <div class="nav-links">
+    <a href="#how-it-works">How it works</a>
+    <a href="#science">The science</a>
+  </div>
+</nav>
+
+<div class="hero">
+  <div class="hero-eyebrow">Polyculture lawn design</div>
+  <h1>A lawn that <em>works</em><br>for your land</h1>
+  <p>Tell us about your property. We'll match it to the best mix of grasses, clovers, wildflowers and low-growing plants — built for your exact soil, climate and shade.</p>
+</div>
+
+<div class="app-wrap">
+
+  <div class="progress-steps">
+    <div class="prog-step active" id="ps1">1 · Your lawn</div>
+    <div class="prog-step" id="ps2">2 · Seed matching</div>
+    <div class="prog-step" id="ps3">3 · Your bags</div>
+    <div class="prog-step" id="ps4">4 · Savings</div>
+  </div>
+
+  <!-- STEP 1 -->
+  <div id="step-input" class="input-card">
+    <div class="input-row">
+      <div class="field span2">
+        <label>Street address or zip code</label>
+        <input type="text" id="address" placeholder="e.g. 123 Maple St, Ithaca NY or 14850" />
+      </div>
+      <div class="field">
+        <label>Lawn size</label>
+        <select id="lawn-size">
+          <option value="">Select size</option>
+          <option value="0.05">Tiny — under &#x215B; acre</option>
+          <option value="0.1">Small — &#x215B; to &#xBC; acre (city lot)</option>
+          <option value="0.2">Medium — &#xBC; to &#xBD; acre</option>
+          <option value="0.5">Large — &#xBD; to 1 acre</option>
+          <option value="1.0">1 to 1.5 acres</option>
+          <option value="2.0">1.5 to 2.5 acres</option>
+          <option value="4.0">2.5+ acres</option>
+        </select>
+        <div class="hint">Tennis court &#x2248; 0.06 ac &nbsp;&#xB7;&nbsp; Football field &#x2248; 1.3 ac &nbsp;&#xB7;&nbsp; City lot &#x2248; 0.1&#x2013;0.2 ac</div>
+      </div>
+    </div>
+    <div class="shade-row">
+      <label>How much of your lawn is shaded by trees or structures?</label>
+      <div class="shade-options">
+        <button class="shade-btn active" data-val="5"  onclick="setShade(this)">Mostly sunny (&#x2264;10%)</button>
+        <button class="shade-btn" data-val="25" onclick="setShade(this)">Some shade (~25%)</button>
+        <button class="shade-btn" data-val="50" onclick="setShade(this)">Half and half (~50%)</button>
+        <button class="shade-btn" data-val="70" onclick="setShade(this)">Mostly shaded (~70%)</button>
+        <button class="shade-btn" data-val="90" onclick="setShade(this)">Deep shade (90%+)</button>
+      </div>
+    </div>
+    <button class="cta-btn" onclick="runAnalysis()">Analyze my lawn &#x2192;</button>
+  </div>
+
+  <!-- STEP 2 -->
+  <div id="section-seeds" class="section hidden">
+    <div class="section-header">
+      <div class="step-badge">2</div>
+      <div class="section-title">Seed matching</div>
+    </div>
+    <div id="loading-seeds" class="loading-pulse">
+      <div class="dot-anim"><span></span><span></span><span></span></div>
+      Querying SSURGO soils &amp; Open-Meteo climate data for your location&#x2026;
+    </div>
+    <div id="seeds-content" class="hidden">
+      <div id="climate-summary"></div>
+      <div class="nav-tabs">
+        <button class="tab-btn active" onclick="showTab('all')">All candidates</button>
+        <button class="tab-btn" onclick="showTab('sunny')">Sunny mix picks</button>
+        <button class="tab-btn" onclick="showTab('shady')">Shady mix picks</button>
+      </div>
+      <div id="tab-all"   class="tab-pane active"><div class="seed-grid" id="seed-grid-all"></div></div>
+      <div id="tab-sunny" class="tab-pane"><div class="seed-grid" id="seed-grid-sunny"></div></div>
+      <div id="tab-shady" class="tab-pane"><div class="seed-grid" id="seed-grid-shady"></div></div>
+    </div>
+  </div>
+
+  <!-- STEP 3 -->
+  <div id="section-bags" class="section hidden">
+    <div class="section-header">
+      <div class="step-badge">3</div>
+      <div class="section-title">Your seed bags</div>
+    </div>
+    <p id="bags-summary" style="font-size:14px;color:var(--muted);margin-bottom:22px"></p>
+    <div class="bags-wrap" id="bags-wrap"></div>
+    <div class="section-header" style="margin-top:34px;margin-bottom:16px">
+      <div class="step-badge" style="background:var(--earth)">&#x1F4CB;</div>
+      <div class="section-title" style="font-size:20px">Planting plan</div>
+    </div>
+    <div class="plan-grid" id="plan-grid"></div>
+  </div>
+
+  <!-- STEP 4 -->
+  <div id="section-savings" class="section hidden">
+    <div class="section-header">
+      <div class="step-badge" style="background:var(--earth)">4</div>
+      <div class="section-title">Your savings</div>
+    </div>
+    <div class="savings-row" id="savings-cards"></div>
+    <div class="savings-detail-card" id="savings-details"></div>
+    <div class="order-box" id="order-box"></div>
+  </div>
+
+</div>
+
+<!-- HOW IT WORKS -->
+<div style="max-width:860px;margin:80px auto 0;padding:0 24px" id="how-it-works">
+  <div style="text-align:center;margin-bottom:48px">
+    <div class="hero-eyebrow">How it works</div>
+    <h2 style="font-family:'DM Serif Display',serif;font-size:34px;letter-spacing:-1px;margin-top:12px">Backed by soil science.<br>Simplified for your yard.</h2>
+  </div>
+  <div class="info-grid">
+    <div class="info-card">
+      <div style="font-size:28px;margin-bottom:12px">&#x1F4CD;</div>
+      <div style="font-weight:500;font-size:15px;margin-bottom:6px">Site analysis</div>
+      <div style="font-size:13px;color:var(--muted);line-height:1.6">Your address is geocoded, then matched to SSURGO soil series data and PRISM climate normals for your exact region &#x2014; drainage class, soil pH, available water capacity, precipitation, and hardiness zone.</div>
+    </div>
+    <div class="info-card">
+      <div style="font-size:28px;margin-bottom:12px">&#x1F331;</div>
+      <div style="font-weight:500;font-size:15px;margin-bottom:6px">Species matching</div>
+      <div style="font-size:13px;color:var(--muted);line-height:1.6">18 species scored across cold tolerance, drought, shade, wet soil, traffic, and fertility using a weighted suitability index. Real soil pH and drainage class directly adjust each species&#x2019; score for your site.</div>
+    </div>
+    <div class="info-card">
+      <div style="font-size:28px;margin-bottom:12px">&#x1F4E6;</div>
+      <div style="font-weight:500;font-size:15px;margin-bottom:6px">Your custom kit</div>
+      <div style="font-size:13px;color:var(--muted);line-height:1.6">Two bags blended to your exact acreage and shade split &#x2014; one for sunny zones, one for shaded. Shipped at the optimal planting window for your hardiness zone with a spreader and full plan.</div>
+    </div>
+  </div>
+</div>
+
+<!-- THE SCIENCE -->
+<div style="max-width:860px;margin:0 auto 100px;padding:0 24px" id="science">
+  <div style="background:var(--sage-light);border:1px solid var(--border);border-radius:18px;padding:36px">
+    <div style="font-family:'DM Serif Display',serif;font-size:26px;margin-bottom:12px;color:var(--ink)">The polyculture principle</div>
+    <p style="font-size:14px;color:var(--muted);line-height:1.7;max-width:640px;margin-bottom:16px">Conventional lawns are monocultures &#x2014; a single species optimised for appearance but requiring constant inputs: fertiliser, herbicide, frequent mowing, irrigation. Polyculture lawns combine nitrogen-fixing legumes, drought-resistant grasses, and low-growing wildflowers to create a self-sustaining ecosystem.</p>
+    <p style="font-size:14px;color:var(--muted);line-height:1.7;max-width:640px">Dutch white clover fixes atmospheric nitrogen, feeding grasses without fertiliser. Fine fescues require half the mowing of Kentucky bluegrass. Yarrow and thyme fill spaces that weeds would otherwise colonise. The result: a lawn that works harder with far less from you.</p>
+  </div>
+</div>
+
+<footer>
+  <div style="margin-bottom:8px"><a href="#">Polylawn</a> &#xB7; SSURGO &amp; PRISM-referenced suitability science &#xB7; <a href="https://github.com">GitHub</a></div>
+  <div>Growing better lawns across the Northeast &#xB7; &#xA9; 2025</div>
+</footer>
+
+<script>
+// =====================================================================
+// POLYLAWN — Polyculture Suitability Index Engine v2
+// Climate source: PRISM 30-yr normals (prism.oregonstate.edu)
+// Soil source:    USDA SSURGO dominant series (websoilsurvey.nrcs.usda.gov)
+// Methodology:    Weighted multi-criteria SI (Shea et al., 2014)
+// =====================================================================
+
+var shadeVal = 5;
+var siteData = {};
+
+// =====================================================================
+// EMBEDDED REFERENCE DATABASE — 80 Northeast reference points
+// Columns: lat, lon, zone, annualPrecip(in), avgJanLow(F), avgJulHigh(F),
+//   summerDroughtWeeks, soilSeries, drainageClass, phLow, phHigh,
+//   texture, awc(in/in), organicMatter(%)
+// =====================================================================
+var GEO_DB = [
+  [44.7,-74.0,'4b',36,2,80,3,'Becket-Tunbridge','well',4.5,5.5,'loamy',0.14,3.2],
+  [44.5,-73.8,'4b',37,4,81,3,'Coveytown-Adams','somewhat poor',5.0,6.0,'sandy loam',0.12,2.8],
+  [44.3,-75.5,'5a',40,6,82,2,'Hogansburg-Malone','moderately well',5.5,6.5,'silt loam',0.18,3.5],
+  [44.6,-75.2,'4b',38,3,80,3,'Adjidaumo-Munuscong','poor',5.0,6.0,'mucky silt',0.22,8.0],
+  [44.2,-73.5,'5a',42,7,82,2,'Panton-Vergennes','somewhat poor',6.0,7.5,'silty clay',0.17,3.8],
+  [44.8,-74.5,'4b',35,1,79,3,'Becket-Lyman','well',4.5,5.5,'sandy loam',0.11,2.5],
+  [43.1,-76.1,'5b',38,10,83,2,'Ontario-Honeoye','well',6.0,7.5,'silt loam',0.20,3.5],
+  [43.0,-75.4,'5b',40,10,83,2,'Chenango-Howard','well',5.5,7.0,'gravelly loam',0.15,2.8],
+  [43.5,-76.2,'5a',36,7,82,2,'Rhinebeck-Odessa','somewhat poor',6.0,7.5,'silt loam',0.19,3.2],
+  [42.9,-77.0,'6a',34,12,85,2,'Dunkirk-Collamer','moderately well',6.5,7.8,'fine sandy loam',0.18,2.9],
+  [43.2,-74.2,'5b',42,9,82,2,'Mardin-Volusia','somewhat poor',5.5,6.5,'channery silt loam',0.17,3.4],
+  [43.7,-75.5,'5a',40,7,81,2,'Worth-Empeyville','moderately well',5.0,6.0,'loam',0.16,3.0],
+  [43.4,-76.5,'5b',30,10,83,2,'Niagara-Rhinebeck','somewhat poor',6.5,7.5,'silt loam',0.19,3.0],
+  [43.0,-73.8,'5b',44,11,84,1,'Nassau-Stockbridge','well',5.5,6.5,'gravelly loam',0.14,3.1],
+  [42.1,-75.9,'5b',42,11,83,2,'Lordstown-Oquaga','well',5.0,6.5,'channery silt loam',0.15,3.0],
+  [42.4,-74.9,'5b',44,10,82,2,'Arnot-Lackawanna','well',4.5,6.0,'loam',0.14,2.8],
+  [42.0,-74.4,'5b',52,12,82,1,'Swartswood-Wurtsboro','well',5.0,6.5,'loam',0.15,3.3],
+  [41.9,-74.0,'6a',54,14,85,1,'Rockaway-Oquaga','well',5.5,6.5,'loam',0.16,3.2],
+  [42.3,-75.5,'5b',40,10,83,2,'Valois-Chenango','well',5.5,6.5,'gravelly loam',0.15,2.9],
+  [42.7,-77.1,'6a',33,14,86,2,'Honeoye-Lima','well',6.5,7.8,'silt loam',0.22,3.5],
+  [42.4,-76.5,'6a',35,13,85,2,'Lansing-Conesus','moderately well',6.5,7.8,'silt loam',0.20,3.4],
+  [42.1,-77.0,'6a',34,13,86,2,'Dunkirk-Arkport','well',6.5,7.5,'fine sandy loam',0.17,2.8],
+  [42.9,-78.2,'6a',36,14,86,1,'Langford-Erie','moderately well',6.0,7.5,'silt loam',0.20,3.3],
+  [43.1,-77.6,'5b',32,10,83,2,'Darien-Galen','somewhat poor',6.5,7.8,'silt loam',0.21,3.2],
+  [42.2,-78.8,'5b',40,12,83,2,'Erie-Frewsburg','moderately well',5.5,6.5,'channery silt loam',0.17,3.5],
+  [41.7,-73.9,'6a',46,15,88,1,'Dutchess-Paxton','well',5.5,6.5,'loam',0.17,3.0],
+  [42.0,-73.8,'6a',48,14,87,1,'Nassau-Cardigan','well',5.5,6.5,'loam',0.16,3.1],
+  [41.5,-74.2,'6b',47,17,89,1,'Otisville-Hoosic','excessively',5.0,6.5,'sandy loam',0.10,2.2],
+  [41.2,-73.7,'6b',50,18,88,1,'Charlton-Sutton','well',5.5,6.5,'fine sandy loam',0.15,2.9],
+  [42.4,-73.8,'5b',44,11,84,1,'Pittstown-Castile','well',5.5,6.5,'loam',0.16,3.1],
+  [40.8,-73.4,'7a',45,22,84,1,'Plymouth-Riverhead','excessively',5.5,6.5,'sandy loam',0.08,1.8],
+  [40.9,-72.8,'7a',43,23,83,1,'Bridgehampton-Haven','well',6.0,7.0,'loam',0.18,2.5],
+  [40.7,-73.6,'7a',44,22,84,1,'Carver-Plymouth','excessively',5.0,6.0,'loamy sand',0.06,1.5],
+  [40.8,-74.4,'6b',46,18,87,1,'Boonton-Rockaway','well',5.5,6.5,'loam',0.16,3.0],
+  [40.5,-74.3,'7a',46,20,88,1,'Sassafras-Downer','well',5.5,6.5,'sandy loam',0.13,2.5],
+  [39.8,-74.9,'7a',44,21,88,1,'Lakewood-Evesboro','excessively',4.5,6.0,'sand',0.05,1.2],
+  [40.1,-75.0,'7a',46,21,88,1,'Glenelg-Manor','well',5.5,6.5,'loam',0.17,3.0],
+  [41.1,-74.7,'6b',50,16,87,1,'Hibernia-Fluvaquents','moderately well',5.5,6.5,'loam',0.17,3.2],
+  [41.5,-72.7,'6b',46,15,85,1,'Charlton-Paxton','well',5.0,6.0,'loam',0.15,2.8],
+  [41.2,-73.2,'6b',48,17,86,1,'Cheshire-Menlo','moderately well',5.5,6.5,'loam',0.17,2.9],
+  [41.8,-72.3,'6a',44,14,85,1,'Enfield-Ellington','moderately well',5.5,6.5,'fine sandy loam',0.15,2.7],
+  [41.6,-73.5,'6a',46,14,85,1,'Dutchess-Lordstown','well',5.5,6.5,'loam',0.16,3.0],
+  [42.4,-71.1,'6a',44,11,82,2,'Paxton-Woodbridge','moderately well',5.5,6.5,'loam',0.17,3.0],
+  [42.1,-72.6,'5b',44,11,83,2,'Woodbridge-Leicester','somewhat poor',5.0,6.0,'loam',0.16,3.2],
+  [42.0,-70.9,'6b',48,15,80,1,'Hinckley-Moshup','excessively',5.0,6.5,'sandy loam',0.09,2.0],
+  [42.7,-72.3,'5b',42,9,82,2,'Becket-Marlow','well',4.5,5.5,'loam',0.14,2.8],
+  [41.7,-70.6,'7a',46,18,80,1,'Merrimac-Deerfield','well',5.5,6.5,'sandy loam',0.11,2.2],
+  [44.5,-72.6,'4b',37,3,80,3,'Woodstock-Marlow','well',4.5,5.5,'loam',0.14,2.9],
+  [44.0,-72.8,'5a',38,6,81,2,'Cabot-Peacham','somewhat poor',5.0,6.0,'silt loam',0.17,4.0],
+  [43.6,-72.5,'5b',40,9,82,2,'Dummerston-Hartland','well',5.5,6.5,'silt loam',0.18,3.2],
+  [44.3,-73.2,'4b',36,4,80,3,'Vergennes-Panton','poor',6.0,7.5,'clay',0.15,4.5],
+  [43.2,-71.5,'5b',40,7,82,2,'Monadnock-Berkshire','well',4.5,5.5,'loam',0.15,2.7],
+  [44.0,-71.2,'4b',42,3,78,3,'Spodosols-Hermon','well',4.0,5.5,'loamy sand',0.10,2.5],
+  [43.7,-71.6,'5a',41,5,81,3,'Peru-Marlow','well',4.5,5.5,'loam',0.14,2.8],
+  [44.3,-69.8,'5a',42,5,79,3,'Skerry-Scantic','somewhat poor',4.5,5.5,'loam',0.14,3.0],
+  [43.9,-70.2,'5b',44,8,81,2,'Buxton-Hollis','well',5.0,6.0,'silt loam',0.17,2.8],
+  [44.8,-68.8,'4b',41,1,78,4,'Chesuncook-Telos','poor',4.5,5.5,'mucky silt loam',0.20,5.5],
+  [45.5,-69.5,'4a',36,-4,75,5,'Plaisted-Stetson','well',4.0,5.0,'loam',0.13,2.5],
+  [40.3,-76.9,'6b',42,17,87,1,'Hagerstown-Duffield','well',6.5,7.5,'silt loam',0.23,3.5],
+  [41.2,-76.0,'5b',40,12,84,2,'Lickdale-Comly','moderately well',5.5,6.5,'loam',0.17,3.0],
+  [40.0,-75.5,'6b',44,19,88,1,'Chester-Glenelg','well',5.5,6.5,'loam',0.18,3.1],
+  [40.6,-77.5,'5b',38,11,85,2,'Hagerstown-Clarksburg','moderately well',6.0,7.0,'silt loam',0.20,3.4],
+  [41.9,-78.0,'5b',40,11,83,2,'Kinzua-Onoville','well',5.0,6.0,'channery loam',0.14,2.8],
+  [39.9,-77.6,'6b',40,17,88,1,'Murrill-Leck Kill','well',5.5,6.5,'loam',0.16,2.9],
+  [39.4,-76.6,'7a',42,21,89,1,'Glenelg-Glenville','well',5.5,6.5,'loam',0.17,3.0],
+  [38.8,-77.0,'7a',40,22,92,1,'Elbert-Panorama','somewhat poor',5.5,6.5,'clay loam',0.18,3.2],
+  [38.4,-75.6,'7b',44,25,90,0,'Sassafras-Rumford','well',5.5,6.5,'sandy loam',0.13,2.2],
+  [39.5,-78.0,'6a',40,16,85,1,'Dekalb-Lehew','well',5.0,6.0,'channery loam',0.13,2.5],
+  [40.5,-78.0,'5b',38,12,84,2,'Rayne-Wharton','well',5.5,6.5,'silt loam',0.19,3.3],
+  [41.8,-71.5,'6a',46,14,84,1,'Charlton-Sutton','well',5.0,6.0,'loam',0.15,2.7],
+  [41.5,-71.4,'6b',46,16,83,1,'Bridgehampton-Hamden','moderately well',6.0,7.0,'silt loam',0.18,2.9],
+  [40.7,-74.0,'7a',46,22,88,0,'Udorthents-Udarents','well',6.0,7.5,'loam (disturbed)',0.14,2.5],
+  [40.9,-73.8,'7a',45,22,87,1,'Charlton-Hollis','well',5.5,6.5,'loam',0.15,2.7],
+  [41.0,-73.9,'6b',46,19,86,1,'Ridgebury-Rockaway','moderately well',5.5,6.5,'loam',0.17,3.0]
+];
+
+// =====================================================================
+// SITE DATA ACQUISITION
+// Primary:  SSURGO Soil Data Access (sdmdataaccess.sc.egov.usda.gov)
+//           Open-Meteo Archive API  (archive-api.open-meteo.com)
+// Fallback: Embedded GEO_DB nearest-neighbour + IDW (no network needed)
+// =====================================================================
+
+// ---- SSURGO: fetch dominant soil component at a lat/lon point -------
+async function fetchSSURGO(lat, lon) {
+  // SDA uses a WKT point query to find the dominant mapunit and its
+  // representative component values. Tabular REST endpoint supports CORS.
+  var sql = (
+    "SELECT TOP 1 " +
+    "  mu.muname, co.drainagecl, " +
+    "  co.ph1to1h2o_r AS ph_low, " +
+    "  co.ph1to1h2o_h AS ph_high, " +
+    "  co.awc_r       AS awc, " +
+    "  co.om_r        AS organic_matter, " +
+    "  co.texture     AS texture " +
+    "FROM " +
+    "  component        co " +
+    "  INNER JOIN mapunit mu ON co.mukey = mu.mukey " +
+    "  INNER JOIN SDA_Get_Mukey_from_intersection_with_WktWgs84('point(" + lon + " " + lat + ")') AS ki " +
+    "    ON mu.mukey = ki.mukey " +
+    "WHERE co.majcompflag = 'Yes' " +
+    "ORDER BY co.comppct_r DESC"
+  );
+  var url = "https://sdmdataaccess.sc.egov.usda.gov/tabular/post.rest";
+  var body = "query=" + encodeURIComponent(sql) + "&format=JSON";
+  try {
+    var resp = await fetch(url, {
+      method: "POST",
+      headers: {"Content-Type": "application/x-www-form-urlencoded"},
+      body: body
+    });
+    if (!resp.ok) return null;
+    var json = await resp.json();
+    // SDA returns {Table: [[row values]...]} with first row = headers
+    var table = json && json.Table;
+    if (!table || table.length < 2) return null;
+    var headers = table[0].map(function(h){ return h.toLowerCase(); });
+    var row     = table[1];
+    function col(name) {
+      var i = headers.indexOf(name);
+      return i >= 0 ? row[i] : null;
+    }
+    var phLow  = parseFloat(col('ph_low'))  || null;
+    var phHigh = parseFloat(col('ph_high')) || null;
+    // ph_high sometimes null in SDA — default to phLow + 0.8
+    if (phLow && !phHigh) phHigh = +(phLow + 0.8).toFixed(1);
+    return {
+      soilSeries:    col('muname')         || null,
+      drainageClass: (col('drainagecl')||'').toLowerCase() || null,
+      texture:       col('texture')        || null,
+      phLow:         phLow,
+      phHigh:        phHigh,
+      awc:           parseFloat(col('awc'))           || null,
+      organicMatter: parseFloat(col('organic_matter'))|| null,
+      source: 'SSURGO'
+    };
+  } catch(e) {
+    console.warn('SSURGO fetch failed:', e);
+    return null;
+  }
+}
+
+// ---- Open-Meteo Archive: fetch 30-year climate normals --------------
+async function fetchClimate(lat, lon) {
+  // Open-Meteo Archive: free, no key, full CORS support.
+  // We fetch 1991-2020 (30-yr standard normal period) daily data and
+  // compute annual precip, Jan low avg, Jul high avg, and drought weeks.
+  // To keep the request fast we request only the variables we need and
+  // use monthly aggregation via the climate normals endpoint.
+  var url = (
+    "https://climate-api.open-meteo.com/v1/climate" +
+    "?latitude="  + lat +
+    "&longitude=" + lon +
+    "&start_date=1991-01-01&end_date=2020-12-31" +
+    "&models=ERA5" +
+    "&monthly=temperature_2m_min,temperature_2m_max,precipitation_sum,et0_fao_evapotranspiration_sum"
+  );
+  try {
+    var resp = await fetch(url);
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    var json = await resp.json();
+    var mo   = json.monthly;
+    if (!mo) throw new Error('No monthly data');
+
+    // Aggregate over all years: group by month index (0-11)
+    var byMonth = Array.from({length:12}, function(){ return {tmin:[],tmax:[],precip:[],et0:[]}; });
+    var times   = mo.time;
+    for (var i = 0; i < times.length; i++) {
+      var m = parseInt(times[i].split('-')[1]) - 1; // 0-based month
+      if (mo.temperature_2m_min[i]              != null) byMonth[m].tmin.push(mo.temperature_2m_min[i]);
+      if (mo.temperature_2m_max[i]              != null) byMonth[m].tmax.push(mo.temperature_2m_max[i]);
+      if (mo.precipitation_sum[i]               != null) byMonth[m].precip.push(mo.precipitation_sum[i]);
+      if (mo.et0_fao_evapotranspiration_sum[i]  != null) byMonth[m].et0.push(mo.et0_fao_evapotranspiration_sum[i]);
+    }
+    function avg(arr) { return arr.length ? arr.reduce(function(s,v){return s+v;},0)/arr.length : null; }
+
+    // Annual precip in inches (Open-Meteo returns mm)
+    var annualPrecipMm = byMonth.reduce(function(s,m){ return s + (avg(m.precip)||0); }, 0);
+    var annualPrecip   = Math.round(annualPrecipMm / 25.4);
+
+    // Jan avg low in °F (month index 0)
+    var janLowC  = avg(byMonth[0].tmin);
+    var avgLowJan = janLowC != null ? Math.round(janLowC * 9/5 + 32) : null;
+
+    // Jul avg high in °F (month index 6)
+    var julHighC  = avg(byMonth[6].tmax);
+    var avgHighJul = julHighC != null ? Math.round(julHighC * 9/5 + 32) : null;
+
+    // USDA hardiness zone from Jan avg low °F
+    var zone = avgLowJan == null ? '5b'
+      : avgLowJan < -20 ? '3a' : avgLowJan < -15 ? '3b' : avgLowJan < -10 ? '4a'
+      : avgLowJan < -5  ? '4b' : avgLowJan < 0   ? '5a' : avgLowJan < 5   ? '5b'
+      : avgLowJan < 10  ? '6a' : avgLowJan < 15  ? '6b' : avgLowJan < 20  ? '7a'
+      : avgLowJan < 25  ? '7b' : '8a';
+
+    // Drought weeks: months where avg ET0 > avg precip (water deficit)
+    var droughtWeeks = 0;
+    for (var mi = 3; mi <= 9; mi++) { // growing season Apr-Oct
+      var p = avg(byMonth[mi].precip) || 0;
+      var e = avg(byMonth[mi].et0)    || 0;
+      if (e > p * 1.1) droughtWeeks += 4; // ~4 weeks per deficit month
+      else if (e > p * 0.8) droughtWeeks += 2;
+    }
+    droughtWeeks = Math.min(droughtWeeks, 14);
+
+    return {
+      zone: zone,
+      annualPrecip:  annualPrecip,
+      avgLowJan:     avgLowJan,
+      avgHighJul:    avgHighJul,
+      droughtWeeks:  droughtWeeks,
+      source: 'Open-Meteo/ERA5'
+    };
+  } catch(e) {
+    console.warn('Open-Meteo fetch failed:', e);
+    return null;
+  }
+}
+
+// ---- GEO_DB fallback: nearest-neighbour + IDW -----------------------
+function lookupFallback(lat, lon) {
+  function hav(la1,lo1,la2,lo2){
+    var R=6371,dLa=(la2-la1)*Math.PI/180,dLo=(lo2-lo1)*Math.PI/180;
+    var a=Math.sin(dLa/2)*Math.sin(dLa/2)+Math.cos(la1*Math.PI/180)*Math.cos(la2*Math.PI/180)*Math.sin(dLo/2)*Math.sin(dLo/2);
+    return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+  }
+  var ranked = GEO_DB.map(function(r){return{r:r,d:hav(lat,lon,r[0],r[1])};}).sort(function(a,b){return a.d-b.d;});
+  var top3 = ranked.slice(0,3);
+  var totalW = top3.reduce(function(s,x){return s+1/Math.max(x.d,0.5);},0);
+  function idw(idx){return top3.reduce(function(s,x){return s+(x.r[idx]/Math.max(x.d,0.5))/totalW;},0);}
+  var best = top3[0].r;
+  return {
+    zone:          best[2],
+    annualPrecip:  Math.round(idw(3)),
+    avgLowJan:     Math.round(idw(4)),
+    avgHighJul:    Math.round(idw(5)),
+    droughtWeeks:  Math.round(idw(6)),
+    soilSeries:    best[7],
+    drainageClass: best[8],
+    texture:       best[11],
+    phLow:         parseFloat(idw(9).toFixed(1)),
+    phHigh:        parseFloat(idw(10).toFixed(1)),
+    awc:           parseFloat(idw(12).toFixed(2)),
+    organicMatter: parseFloat(idw(13).toFixed(1)),
+    source: 'GEO_DB fallback'
+  };
+}
+
+// ---- Primary lookup: call both APIs, merge, fallback gracefully -----
+async function lookupSiteData(lat, lon) {
+  // Fire both requests in parallel
+  var results = await Promise.allSettled([
+    fetchSSURGO(lat, lon),
+    fetchClimate(lat, lon)
+  ]);
+  var soil    = results[0].status === 'fulfilled' ? results[0].value : null;
+  var climate = results[1].status === 'fulfilled' ? results[1].value : null;
+
+  // Fall back to GEO_DB for anything that failed
+  var fb = lookupFallback(lat, lon);
+
+  var zone          = (climate && climate.zone)          || fb.zone;
+  var annualPrecip  = (climate && climate.annualPrecip)  || fb.annualPrecip;
+  var avgLowJan     = (climate && climate.avgLowJan)     || fb.avgLowJan;
+  var avgHighJul    = (climate && climate.avgHighJul)    || fb.avgHighJul;
+  var droughtWeeks  = (climate && climate.droughtWeeks != null) ? climate.droughtWeeks : fb.droughtWeeks;
+
+  var soilSeries    = (soil && soil.soilSeries)    || fb.soilSeries;
+  var drainageClass = (soil && soil.drainageClass) || fb.drainageClass;
+  var texture       = (soil && soil.texture)       || fb.texture;
+  var phLow         = (soil && soil.phLow)         || fb.phLow;
+  var phHigh        = (soil && soil.phHigh)        || fb.phHigh;
+  var awc           = (soil && soil.awc)           || fb.awc;
+  var organicMatter = (soil && soil.organicMatter) || fb.organicMatter;
+
+  // Sources label
+  var sources = [];
+  if (climate && climate.source) sources.push(climate.source);
+  if (soil    && soil.source)    sources.push(soil.source);
+  if (!climate || !soil) sources.push('partial GEO_DB fallback');
+  var sourceLabel = sources.join(' + ');
+
+  // Derive SI factors from real merged values
+  var coldFactor    = avgLowJan < 5 ? 0.92 : avgLowJan < 12 ? 0.82 : avgLowJan < 18 ? 0.70 : 0.58;
+  var drainMap      = {'excessively':0.25,'well':0.50,'moderately well':0.63,
+                       'somewhat poor':0.78,'poor':0.90,'very poor':0.97};
+  var drainScore    = drainMap[drainageClass] || 0.52;
+  var wetFactor     = Math.min(0.95, drainScore * (annualPrecip > 45 ? 1.15 : annualPrecip > 38 ? 1.0 : 0.85));
+  var sandyBonus    = (texture||'').indexOf('sand') >= 0 ? 0.12 : 0;
+  var droughtFactor = Math.min(0.90, 0.35 + droughtWeeks * 0.07 + sandyBonus);
+  var phMid         = ((phLow||6.0) + (phHigh||7.0)) / 2;
+  var phFactor      = phMid<5.0?0.55 : phMid<5.5?0.72 : phMid<6.0?0.88 : phMid<7.2?1.0 : 0.85;
+  var awcFactor     = Math.min(1.0, (awc||0.15) / 0.20);
+
+  return {
+    zone, annualPrecip, avgLowJan, avgHighJul, droughtWeeks,
+    soilSeries, drainageClass, texture, phLow, phHigh, awc, organicMatter,
+    coldFactor, wetFactor, droughtFactor, phFactor, awcFactor,
+    sourceLabel,
+    nearestKm: Math.round(lookupFallback(lat,lon).phLow), // not used for display now
+    distanceNote: soil ? 'live SSURGO' : 'GEO_DB nearest match'
+  };
+}
+function calcSI(seed, isShady) {
+  var r    = seed.responses;
+  var site = siteData.climate || {};
+  var coldFactor    = site.coldFactor    || 0.75;
+  var droughtFactor = site.droughtFactor || 0.55;
+  var awcFactor     = site.awcFactor     || 0.75;
+
+  var sitePh = ((site.phLow || 6.0) + (site.phHigh || 7.0)) / 2;
+  var phPenalty = 1.0;
+  if      (sitePh < seed.ph_range[0] - 0.5) phPenalty = 0.58;
+  else if (sitePh < seed.ph_range[0])        phPenalty = 0.82;
+  else if (sitePh > seed.ph_range[1] + 0.5) phPenalty = 0.62;
+  else if (sitePh > seed.ph_range[1])        phPenalty = 0.85;
+
+  var drainMap = {'excessively':0.25,'well':0.50,'moderately well':0.63,
+                  'somewhat poor':0.78,'poor':0.90,'very poor':0.97};
+  var drainScore  = drainMap[site.drainageClass] || 0.50;
+  var effectiveWet = (r.wetness/10) * (0.40 + drainScore * 0.60);
+  var effectiveDrought = (r.drought/10) * droughtFactor * (1 - awcFactor * 0.20);
+
+  var scores = {
+    cold:     (r.cold/10) * coldFactor,
+    drought:  effectiveDrought,
+    shade:    r.shade/10,
+    wet:      effectiveWet,
+    traffic:  r.traffic/10,
+    fertility:r.fertility/10
+  };
+
+  var si;
+  if (isShady) {
+    si = scores.shade*0.35 + scores.cold*0.20 + scores.wet*0.15 +
+         scores.fertility*0.15 + scores.drought*0.08 + scores.traffic*0.07;
+    if (r.shade < 3) si *= 0.50;
+  } else {
+    si = scores.drought*0.28 + scores.cold*0.25 + scores.fertility*0.18 +
+         scores.wet*0.12 + scores.traffic*0.10 + scores.shade*0.07;
+    if (r.drought < 3) si *= 0.65;
+  }
+  return Math.min(1, Math.max(0, si * phPenalty));
+}
+
+function getLimitingFactors(seed, isShady) {
+  var r    = seed.responses;
+  var site = siteData.climate || {};
+  var sitePh = ((site.phLow||6.0) + (site.phHigh||7.0)) / 2;
+  var factors = [];
+
+  if (isShady && r.shade < 5)     factors.push({label:'Low shade tolerance',bad:true});
+  if (!isShady && r.drought < 4)  factors.push({label:'Drought-sensitive',bad:true});
+  if (r.cold < 5)                 factors.push({label:'Cold sensitivity',bad:true});
+  if (sitePh < seed.ph_range[0]-0.3) factors.push({label:'pH '+sitePh.toFixed(1)+' too low',bad:true});
+  else if (sitePh > seed.ph_range[1]+0.3) factors.push({label:'pH '+sitePh.toFixed(1)+' too high',bad:true});
+  if (r.cold >= 8)                factors.push({label:'Cold-hardy &#x2713;',bad:false});
+  if (isShady && r.shade >= 8)    factors.push({label:'Shade-adapted &#x2713;',bad:false});
+  if (!isShady && r.drought >= 8) factors.push({label:'Drought-adapted &#x2713;',bad:false});
+  if (r.fertility <= 1)           factors.push({label:'No fertiliser needed &#x2713;',bad:false});
+
+  var poorDrain = ['somewhat poor','poor','very poor'].indexOf(site.drainageClass) >= 0;
+  if (poorDrain && r.wetness >= 7) factors.push({label:'Suits '+site.drainageClass+' soils &#x2713;',bad:false});
+  if (poorDrain && r.wetness <= 3) factors.push({label:'Poor fit for '+site.drainageClass+' soils',bad:true});
+
+  return factors.slice(0,3);
+}
+
+// =====================================================================
+// GEOCODING
+// =====================================================================
+async function geocode(address) {
+  try {
+    var res  = await fetch('https://nominatim.openstreetmap.org/search?q='+encodeURIComponent(address)+'&format=json&limit=1',
+                           {headers:{'User-Agent':'Polylawn-LawnAdvisor/1.0'}});
+    var data = await res.json();
+    if (data && data[0]) return {lat:parseFloat(data[0].lat),lon:parseFloat(data[0].lon),display:data[0].display_name};
+  } catch(e) { console.warn('Geocoding failed',e); }
+  return null;
+}
+
+// =====================================================================
+// UI
+// =====================================================================
+function setShade(btn) {
+  document.querySelectorAll('.shade-btn').forEach(function(b){b.classList.remove('active');});
+  btn.classList.add('active');
+  shadeVal = parseInt(btn.dataset.val);
+}
+
+function showTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach(function(b,i){
+    b.classList.toggle('active',['all','sunny','shady'][i]===tab);
+  });
+  document.querySelectorAll('.tab-pane').forEach(function(p){p.classList.remove('active');});
+  document.getElementById('tab-'+tab).classList.add('active');
+}
+
+function setStep(n) {
+  for(var i=1;i<=4;i++){
+    var el=document.getElementById('ps'+i);
+    el.classList.remove('active','done');
+    if(i<n) el.classList.add('done');
+    if(i===n) el.classList.add('active');
+  }
+}
+
+function delay(ms){return new Promise(function(r){setTimeout(r,ms);});}
+
+function toggleExpand(el) {
+  el.classList.toggle('expanded');
+  var btn = el.querySelector('.expand-btn');
+  if (btn) btn.innerHTML = el.classList.contains('expanded') ? '&#x25B2; Hide detail' : '&#x25BC; Why this score?';
+}
+function buildSeedCard(seed, isShady) {
+  var si  = isShady ? seed.shadeSI : seed.sunSI;
+  var pct = Math.round(si*100);
+  var factors = getLimitingFactors(seed, isShady);
+  var sel = pct >= 60;
+  var tags = (seed.tags||[]).map(function(t){return '<span class="seed-tag">'+t+'</span>';}).join('');
+  var varDefs = [
+    {lbl:'Cold',v:seed.responses.cold},
+    {lbl:'Drought',v:seed.responses.drought},
+    {lbl:'Shade',v:seed.responses.shade},
+    {lbl:'Wet soil',v:seed.responses.wetness},
+    {lbl:'Traffic',v:seed.responses.traffic},
+    {lbl:'Low-fert',v:(11-seed.responses.fertility)}
+  ];
+  var varBars = varDefs.map(function(vd){
+    return '<div class="var-row">'
+      +'<span class="var-label">'+vd.lbl+'</span>'
+      +'<div class="var-bar-wrap"><div class="var-bar-fill" style="width:'+(vd.v*10)+'%"></div></div>'
+      +'<span class="var-val">'+vd.v+'</span>'
+      +'</div>';
+  }).join('');
+  return '<div class="seed-card '+(sel?'selected':'')+'" onclick="toggleExpand(this)">'
+    +'<span class="seed-icon">'+seed.icon+'</span>'
+    +'<div class="seed-name">'+seed.name+'</div>'
+    +'<div class="seed-sci">'+seed.scientificName+'</div>'
+    +'<div class="seed-type">'+seed.type+'</div>'
+    +'<div style="margin-bottom:6px">'+tags+'</div>'
+    +'<div class="si-bar-wrap"><div class="si-bar" style="width:'+pct+'%"></div></div>'
+    +'<div class="si-label"><span>Suitability index</span><span>'+pct+'%</span></div>'
+    +factors.map(function(f){return '<span class="limiting-tag '+(f.bad?'':'good')+'">'+f.label+'</span>';}).join('')
+    +'<div class="seed-desc">'+seed.desc+'</div>'
+    +'<div class="var-breakdown">'+varBars+'</div>'
+    +'<button class="expand-btn">&#x25BC; Why this score?</button>'
+    +'</div>';
+}
+
+// =====================================================================
+// ANALYSIS
+// =====================================================================
+async function runAnalysis() {
+  var addr = document.getElementById('address').value.trim();
+  var size = parseFloat(document.getElementById('lawn-size').value);
+  if (!addr || !size) { alert('Please enter your address and lawn size.'); return; }
+
+  var btn = document.querySelector('.cta-btn');
+  btn.disabled = true; btn.textContent = 'Analysing\u2026';
+
+  setStep(2);
+  document.getElementById('section-seeds').classList.remove('hidden');
+  document.getElementById('loading-seeds').classList.remove('hidden');
+  document.getElementById('seeds-content').classList.add('hidden');
+  document.getElementById('section-seeds').scrollIntoView({behavior:'smooth',block:'start'});
+  await delay(300);
+
+  var geo = await geocode(addr);
+  if (!geo) geo = {lat:43.0,lon:-76.1,display:addr+' (location approximated)'};
+
+  var site = await lookupSiteData(geo.lat, geo.lon);
+  siteData = {geo:geo, climate:site, size:size, shade:shadeVal};
+
+  SEEDS.forEach(function(s){ s.sunSI=calcSI(s,false); s.shadeSI=calcSI(s,true); });
+
+  var loc = geo.display.split(',').slice(0,2).join(',');
+  document.getElementById('climate-summary').innerHTML =
+    '<strong>'+loc+'</strong> &nbsp;&mdash;&nbsp; USDA zone '+site.zone
+    +'<div class="site-row">'
+    +'<span class="site-chip">&#x1F327; <b>'+site.annualPrecip+'"</b> annual precip</span>'
+    +'<span class="site-chip">&#x1F321; Jan low <b>'+site.avgLowJan+'&deg;F</b></span>'
+    +'<span class="site-chip">&#x2600;&#xFE0F; Jul high <b>'+site.avgHighJul+'&deg;F</b></span>'
+    +'<span class="site-chip">&#x1F3DC; <b>'+site.droughtWeeks+'</b> dry weeks/summer</span>'
+    +'</div>'
+    +'<div class="site-row" style="margin-top:4px">'
+    +'<span class="site-chip">&#x1FAA8; Soil: <b>'+site.soilSeries+'</b></span>'
+    +'<span class="site-chip">&#x1F4A7; <b>'+site.drainageClass+'</b> drainage</span>'
+    +'<span class="site-chip">&#x1F9F1; <b>'+site.texture+'</b></span>'
+    +'<span class="site-chip">&#x2697;&#xFE0F; pH <b>'+site.phLow+'&ndash;'+site.phHigh+'</b></span>'
+    +'<span class="site-chip">&#x1F4A7; AWC <b>'+site.awc+'</b> in/in</span>'
+    +'<span class="site-chip">&#x1F33F; OM <b>'+site.organicMatter+'%</b></span>'
+    +'</div>'
+    +'<div style="margin-top:6px;font-size:11px;opacity:.65">&#x1F4E1; '+site.sourceLabel+' &middot; '+SEEDS.length+' species evaluated</div>';
+
+  var byAvg = SEEDS.slice().sort(function(a,b){return((b.sunSI+b.shadeSI)/2)-((a.sunSI+a.shadeSI)/2);});
+  document.getElementById('seed-grid-all').innerHTML   = byAvg.map(function(s){return buildSeedCard(s,false);}).join('');
+
+  var sunPicks   = SEEDS.slice().sort(function(a,b){return b.sunSI-a.sunSI;}).slice(0,5);
+  var shadePicks = SEEDS.slice().sort(function(a,b){return b.shadeSI-a.shadeSI;}).slice(0,5);
+  document.getElementById('seed-grid-sunny').innerHTML = sunPicks.map(function(s){return buildSeedCard(s,false);}).join('');
+  document.getElementById('seed-grid-shady').innerHTML = shadePicks.map(function(s){return buildSeedCard(s,true);}).join('');
+
+  document.getElementById('loading-seeds').classList.add('hidden');
+  document.getElementById('seeds-content').classList.remove('hidden');
+  await delay(400);
+  buildBags(sunPicks, shadePicks, size, shadeVal);
+  btn.disabled = false; btn.textContent = 'Analyze my lawn \u2192';
+}
+
+function buildBags(sunPicks, shadePicks, sizeAc, shadePct) {
+  setStep(3);
+  document.getElementById('section-bags').classList.remove('hidden');
+
+  var shadeFrac = shadePct/100;
+  var shadeAc   = (sizeAc*shadeFrac).toFixed(2);
+  var sunAc     = (sizeAc*(1-shadeFrac)).toFixed(2);
+  var sqftPerAc = 43560;
+  var seedRateOz= 0.003;
+
+  var sunMix   = [{seed:sunPicks[0],pct:35},{seed:sunPicks[1],pct:28},{seed:sunPicks[2],pct:22},{seed:sunPicks[3],pct:15}];
+  var shadeMix = [{seed:shadePicks[0],pct:40},{seed:shadePicks[1],pct:28},{seed:shadePicks[2],pct:20},{seed:shadePicks[3],pct:12}];
+  var totalSunOz   = parseFloat(sunAc)   * sqftPerAc * seedRateOz;
+  var totalShadeOz = parseFloat(shadeAc) * sqftPerAc * seedRateOz;
+
+  document.getElementById('bags-summary').textContent =
+    'Based on your '+sizeAc+' ac lawn ('+shadePct+'% shaded), we\'ve prepared two bags \u2014 a sunny bag for '+sunAc+' ac and a shady bag for '+shadeAc+' ac.';
+
+  function bagHTML(mix, totalOz, cls, title, subtitle) {
+    return '<div class="bag-card '+cls+'">'
+      +'<div class="bag-title">'+title+'</div>'
+      +'<div class="bag-subtitle">'+subtitle+' &middot; '+totalOz.toFixed(1)+' oz total</div>'
+      +mix.map(function(m){
+        return '<div class="bag-item">'
+          +'<span class="bag-item-name">'+m.seed.icon+' '+m.seed.name+'</span>'
+          +'<span class="bag-item-pct">'+m.pct+'%</span>'
+          +'<span class="bag-item-oz">'+((m.pct/100)*totalOz).toFixed(1)+' oz</span>'
+          +'</div>';
+      }).join('')+'</div>';
+  }
+
+  document.getElementById('bags-wrap').innerHTML =
+    bagHTML(sunMix,   totalSunOz,   'sunny', '&#x2600;&#xFE0F; Sunny bag', sunAc+' ac coverage') +
+    bagHTML(shadeMix, totalShadeOz, 'shady', '&#x1F33F; Shady bag', shadeAc+' ac coverage');
+
+  var site = siteData.climate || {};
+  var z = site.zone || '5b';
+  var plantWindow = z.charAt(0)==='4' ? 'Late August \u2013 early September'
+                  : z.charAt(0)==='5' ? 'Late August \u2013 mid September'
+                  : 'Early\u2013mid September';
+  var poorDrain = ['somewhat poor','poor','very poor'].indexOf(site.drainageClass) >= 0;
+  var soilNote  = poorDrain ? site.drainageClass+' drainage detected \u2014 seed raised areas first'
+                            : 'Soil temps 50\u201365\u00B0F, zone '+z+' fall window';
+
+  document.getElementById('plan-grid').innerHTML =
+    '<div class="plan-card"><div class="plan-label">Best planting window</div><div class="plan-value">'+plantWindow+'</div><div class="plan-detail">'+soilNote+'</div></div>'
+   +'<div class="plan-card"><div class="plan-label">First-year mowing</div><div class="plan-value">3\u20134 times max</div><div class="plan-detail">Only when grasses reach 4\u20135"; cut to 3.5"</div></div>'
+   +'<div class="plan-card"><div class="plan-label">Mature lawn mowing</div><div class="plan-value">4\u20136\u00D7 per season</div><div class="plan-detail">Clover and herbs suppress height naturally</div></div>'
+   +'<div class="plan-card"><div class="plan-label">Irrigation</div><div class="plan-value">Establishment only</div><div class="plan-detail">Light daily water 14 days post-seed, then zero</div></div>'
+   +'<div class="plan-card"><div class="plan-label">Fertiliser</div><div class="plan-value">None \u2014 ever</div><div class="plan-detail">Clovers fix nitrogen; fescues thrive in low fertility</div></div>'
+   +'<div class="plan-card"><div class="plan-label">Winter prep</div><div class="plan-value">Leave at 4" height</div><div class="plan-detail">No winteriser; mulch leaves in place for organic matter</div></div>';
+
+  document.getElementById('section-bags').scrollIntoView({behavior:'smooth',block:'start'});
+  setTimeout(function(){buildSavings(sizeAc);}, 500);
+}
+
+function buildSavings(sizeAc) {
+  setStep(4);
+  document.getElementById('section-savings').classList.remove('hidden');
+
+  var mowSave   = Math.round(sizeAc * 24 * 38);
+  var fertSave  = Math.round(sizeAc * 43560/1000 * 18);
+  var waterSave = Math.round(sizeAc * 43560 * 0.5 * 0.003 * 10);
+  var herbSave  = Math.round(sizeAc * 75);
+  var total     = mowSave + fertSave + waterSave + herbSave;
+  var mowHours  = Math.round(sizeAc * 20);
+  var co2       = Math.round(sizeAc * 43560 * 0.0012);
+  var bees      = Math.round(sizeAc * 500);
+
+  document.getElementById('savings-cards').innerHTML =
+    '<div class="save-card"><div class="save-icon">&#x1F4B5;</div><div class="save-num">$'+total.toLocaleString()+'</div><div class="save-label">saved per year</div></div>'
+   +'<div class="save-card"><div class="save-icon">&#x23F1;</div><div class="save-num">'+mowHours+'h</div><div class="save-label">less mowing per season</div></div>'
+   +'<div class="save-card"><div class="save-icon">&#x1F41D;</div><div class="save-num">'+bees.toLocaleString()+'+</div><div class="save-label">more pollinator visits/yr</div></div>';
+
+  document.getElementById('savings-details').innerHTML =
+    '<div class="savings-detail-title">Where the savings come from</div>'
+   +'<div class="detail-row"><span class="dk">Mowing frequency reduction</span><span class="dv">$'+mowSave.toLocaleString()+'/yr</span></div>'
+   +'<div class="detail-row"><span class="dk">Zero synthetic fertiliser</span><span class="dv">$'+fertSave.toLocaleString()+'/yr</span></div>'
+   +'<div class="detail-row"><span class="dk">Reduced irrigation after establishment</span><span class="dv">$'+waterSave.toLocaleString()+'/yr</span></div>'
+   +'<div class="detail-row"><span class="dk">Herbicide &amp; pesticide eliminated</span><span class="dv">$'+herbSave.toLocaleString()+'/yr</span></div>'
+   +'<div class="detail-row"><span class="dk">CO&#x2082; sequestered vs. conventional lawn</span><span class="dv">'+co2+' lbs/yr</span></div>'
+   +'<div class="detail-row"><span class="dk">Soil organic matter (5-yr projection)</span><span class="dv">+0.8&ndash;1.2%</span></div>'
+   +'<div style="margin-top:14px;font-size:11px;color:var(--muted)">Estimates based on national averages. Actual savings vary by region.</div>';
+
+  var zone      = (siteData.climate || {}).zone || 'your region';
+  var bagPrice  = Math.round((sizeAc * 43560 * 0.003)/16 * 12 + 22);
+  var spreader  = sizeAc > 0.3 ? 'broadcast spreader' : 'hand spreader';
+
+  document.getElementById('order-box').innerHTML =
+    '<h3>Your custom seed kit</h3>'
+   +'<p>Two bags custom-blended for your property, shipped at the perfect planting time for zone '+zone+'.</p>'
+   +'<div class="order-price">$'+bagPrice+' <span>/ season</span></div>'
+   +'<div class="order-per">Annual subscription &middot; adjust or cancel anytime</div>'
+   +'<a href="mailto:hello@polylawn.co?subject=Seed+kit+order" class="order-btn">Subscribe and get my bags &rarr;</a>'
+   +'<div class="order-includes">&#x2713; Sunny bag &nbsp;&middot;&nbsp; &#x2713; Shady bag &nbsp;&middot;&nbsp; &#x2713; '+spreader+' (yours forever)<br>&#x2713; Printed planting guide &nbsp;&middot;&nbsp; &#x2713; Seasonal seeding reminders</div>';
+
+  document.getElementById('section-savings').scrollIntoView({behavior:'smooth',block:'start'});
+  // Start over button
+  var existing = document.getElementById('start-over-btn');
+  if (!existing) {
+    var soBtn = document.createElement('button');
+    soBtn.id = 'start-over-btn';
+    soBtn.className = 'start-over';
+    soBtn.textContent = '\u21BA Start over with a different address';
+    soBtn.onclick = function(){
+      ['section-seeds','section-bags','section-savings'].forEach(function(id){document.getElementById(id).classList.add('hidden');});
+      setStep(1);
+      document.getElementById('step-input').scrollIntoView({behavior:'smooth',block:'start'});
+      soBtn.remove();
+    };
+    document.getElementById('order-box').parentNode.appendChild(soBtn);
+  }
+}
+</script>
+</body>
+</html>
