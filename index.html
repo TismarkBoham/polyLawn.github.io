@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Site Locator + Climate</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: monospace;
+      background: #eeeee8;
+      min-height: 100vh;
+      padding: 40px 20px;
+    }
+
+    h1 {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: #555;
+      margin-bottom: 24px;
+    }
+
+    .panels {
+      display: flex;
+      gap: 16px;
+      max-width: 960px;
+      margin: 0 auto;
+      flex-wrap: wrap;
+    }
+
+    .panel {
+      background: white;
+      border: 2px solid #222;
+      padding: 28px;
+      flex: 1;
+      min-width: 300px;
+    }
+
+    .panel-title {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: #888;
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #e0e0e0;
+    }
+
+    label {
+      display: block;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #666;
+      margin-bottom: 5px;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 2px solid #ddd;
+      font-family: monospace;
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.15s;
+      margin-bottom: 14px;
+    }
+
+    input:focus { border-color: #222; }
+    input[readonly] { background: #f7f7f4; color: #333; cursor: default; }
+
+    button {
+      width: 100%;
+      padding: 11px;
+      background: #222;
+      color: white;
+      border: none;
+      font-family: monospace;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background 0.15s;
+      margin-top: 2px;
+    }
+
+    button:hover { background: #444; }
+    button:disabled { background: #aaa; cursor: not-allowed; }
+
+    .status {
+      font-size: 11px;
+      color: #888;
+      min-height: 16px;
+      margin-top: 10px;
+      line-height: 1.4;
+    }
+    .status.error { color: #b00; }
+    .status.ok { color: #060; }
+
+    /* Climate panel */
+    .climate-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 4px;
+    }
+
+    .climate-stat {
+      background: #f7f7f4;
+      border: 1px solid #ddd;
+      padding: 12px 14px;
+    }
+
+    .stat-label {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #888;
+      margin-bottom: 4px;
+    }
+
+    .stat-value {
+      font-size: 18px;
+      font-weight: 700;
+      color: #222;
+      line-height: 1;
+    }
+
+    .stat-unit {
+      font-size: 10px;
+      color: #888;
+      margin-top: 2px;
+    }
+
+    .climate-stat.wide {
+      grid-column: span 2;
+    }
+
+    .source-note {
+      font-size: 10px;
+      color: #aaa;
+      margin-top: 16px;
+      line-height: 1.5;
+    }
+
+    .source-note a { color: #888; }
+
+    .snap-note {
+      font-size: 10px;
+      color: #888;
+      margin-top: 8px;
+      font-style: italic;
+    }
+
+    .placeholder {
+      color: #bbb;
+      font-size: 12px;
+      text-align: center;
+      padding: 40px 0;
+    }
+
+    @media (max-width: 660px) {
+      .panels { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+
+<div style="max-width:960px;margin:0 auto 20px auto;">
+  <h1>Site Locator + Climate Data</h1>
+</div>
+
+<div class="panels">
+
+  <!-- PANEL 1: Geocoder -->
+  <div class="panel">
+    <div class="panel-title">01 — Geocode Address</div>
+
+    <label for="address">Address</label>
+    <input type="text" id="address" placeholder="e.g. 123 Main St, Albany, NY" />
+
+    <label for="coords">Longitude, Latitude</label>
+    <input type="text" id="coords" readonly placeholder="— , —" />
+
+    <button id="geoBtn" onclick="geocode()">Geocode Address</button>
+    <div id="geoStatus" class="status"></div>
+  </div>
+
+  <!-- PANEL 2: Climate -->
+  <div class="panel">
+    <div class="panel-title">02 — Climate Data (1991–2020 Normals)</div>
+
+    <label for="coordsIn">Longitude, Latitude</label>
+    <input type="text" id="coordsIn" placeholder="Paste coords or geocode above" />
+
+    <button id="climBtn" onclick="fetchClimate()">Fetch Climate Data</button>
+    <div id="climStatus" class="status"></div>
+
+    <div id="climateOutput">
+      <div class="placeholder">← Geocode an address, or paste coordinates</div>
+    </div>
+
+    <div class="source-note">
+      Data: <a href="https://open-meteo.com/en/docs/climate-api" target="_blank">Open-Meteo Climate API</a> (ERA5 reanalysis, 1991–2020 30-yr normals, ~9km grid).
+      PRISM does not expose a browser-callable point API; ERA5 normals are the standard equivalent for CONUS site characterization.
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // ── Geocode ──────────────────────────────────────────────────────────────
+  async function geocode() {
+    const address = document.getElementById('address').value.trim();
+    const coordsInput = document.getElementById('coords');
+    const status = document.getElementById('geoStatus');
+    const btn = document.getElementById('geoBtn');
+
+    if (!address) { setStatus(status, 'Enter an address.', 'error'); return; }
+
+    btn.disabled = true;
+    setStatus(status, 'Looking up…', '');
+    coordsInput.value = '';
+
+    try {
+      const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(address)}&format=json&limit=1`;
+      const res = await fetch(url, { headers: { 'Accept-Language': 'en' } });
+      const data = await res.json();
+
+      if (!data.length) {
+        setStatus(status, 'Address not found. Try being more specific.', 'error');
+      } else {
+        const lon = parseFloat(data[0].lon).toFixed(6);
+        const lat = parseFloat(data[0].lat).toFixed(6);
+        const coordStr = `${lon}, ${lat}`;
+        coordsInput.value = coordStr;
+        // Mirror into climate panel input
+        document.getElementById('coordsIn').value = coordStr;
+        setStatus(status, `✓ ${data[0].display_name}`, 'ok');
+        // Snap note
+        document.getElementById('climStatus').textContent = 'Coordinates received — click Fetch Climate Data.';
+      }
+    } catch(e) {
+      setStatus(status, 'Network error. Check connection.', 'error');
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  // ── Fetch Climate ─────────────────────────────────────────────────────────
+  async function fetchClimate() {
+    const raw = document.getElementById('coordsIn').value.trim();
+    const status = document.getElementById('climStatus');
+    const btn = document.getElementById('climBtn');
+
+    if (!raw) { setStatus(status, 'Enter or geocode coordinates first.', 'error'); return; }
+
+    // Parse "lon, lat" or "lat, lon" — we'll ask for lon,lat from geocoder
+    // format from our geocoder is "lon, lat"
+    const parts = raw.split(',').map(s => s.trim());
+    if (parts.length !== 2 || isNaN(parts[0]) || isNaN(parts[1])) {
+      setStatus(status, 'Format must be: longitude, latitude', 'error');
+      return;
+    }
+
+    const lon = parseFloat(parts[0]);
+    const lat = parseFloat(parts[1]);
+
+    // Sanity check: US continental bounds
+    if (lat < 24 || lat > 50 || lon < -125 || lon > -66) {
+      setStatus(status, '⚠ Coordinates outside continental US — data may be limited.', 'error');
+    }
+
+    btn.disabled = true;
+    setStatus(status, 'Fetching climate normals…', '');
+    document.getElementById('climateOutput').innerHTML = '<div class="placeholder">Loading…</div>';
+
+    // Open-Meteo Climate API — 30-year normals (1991–2020)
+    // Variables: temperature_2m_max, temperature_2m_min, temperature_2m_mean, precipitation_sum,
+    //            wind_speed_10m_mean, shortwave_radiation_sum
+    // We request annual averages (monthly=false gives annual normals)
+    const vars = [
+      'temperature_2m_max',
+      'temperature_2m_min',
+      'temperature_2m_mean',
+      'precipitation_sum',
+      'wind_speed_10m_mean',
+      'shortwave_radiation_sum'
+    ].join(',');
+
+    const apiUrl = `https://climate-api.open-meteo.com/v1/climate?` +
+      `latitude=${lat}&longitude=${lon}` +
+      `&start_date=1991-01-01&end_date=2020-12-31` +
+      `&models=ERA5` +
+      `&daily=${vars}` +
+      `&temperature_unit=fahrenheit` +
+      `&precipitation_unit=inch` +
+      `&wind_speed_unit=mph` +
+      `&timezone=auto`;
+
+    try {
+      const res = await fetch(apiUrl);
+      const data = await res.json();
+
+      if (data.error) {
+        setStatus(status, `API error: ${data.reason || 'Unknown'}`, 'error');
+        document.getElementById('climateOutput').innerHTML = '';
+        return;
+      }
+
+      // Compute annual averages/totals from daily data
+      const d = data.daily;
+      const n = d.time.length;
+
+      const mean = arr => arr.reduce((a,b) => a + b, 0) / arr.length;
+      const annualTotal = arr => (arr.reduce((a,b) => a + b, 0) / 30); // sum per year averaged over 30 yrs
+
+      const tmax  = mean(d.temperature_2m_max).toFixed(1);
+      const tmin  = mean(d.temperature_2m_min).toFixed(1);
+      const tmean = mean(d.temperature_2m_mean).toFixed(1);
+      const precip = annualTotal(d.precipitation_sum).toFixed(1);
+      const wind  = mean(d.wind_speed_10m_mean).toFixed(1);
+      const solar = mean(d.shortwave_radiation_sum).toFixed(1);
+
+      // Growing season (days tmean > 50°F proxy) 
+      const growDays = d.temperature_2m_mean.filter(t => (t * 9/5 + 32) > 50).length;
+      const avgGrowDays = Math.round(growDays / 30);
+
+      // KGD index proxy: freeze days
+      const freezeDays = d.temperature_2m_min.filter(t => (t * 9/5 + 32) < 32).length;
+      const avgFreeze = Math.round(freezeDays / 30);
+
+      // Find nearest PRISM grid cell (just show the snapped coords at 4km)
+      const snapLat = (Math.round(lat * 25) / 25).toFixed(4); // ~4km = ~0.04°
+      const snapLon = (Math.round(lon * 25) / 25).toFixed(4);
+
+      setStatus(status, `✓ Data retrieved for ${lat.toFixed(4)}, ${lon.toFixed(4)} — snapped to nearest ~4km ERA5 grid cell: ${snapLat}, ${snapLon}`, 'ok');
+
+      document.getElementById('climateOutput').innerHTML = `
+        <div class="climate-grid" style="margin-top:14px;">
+          <div class="climate-stat">
+            <div class="stat-label">Annual Precip</div>
+            <div class="stat-value">${precip}"</div>
+            <div class="stat-unit">inches / year</div>
+          </div>
+          <div class="climate-stat">
+            <div class="stat-label">Mean Temp</div>
+            <div class="stat-value">${tmean}°F</div>
+            <div class="stat-unit">annual average</div>
+          </div>
+          <div class="climate-stat">
+            <div class="stat-label">Mean Max Temp</div>
+            <div class="stat-value">${tmax}°F</div>
+            <div class="stat-unit">daily max, averaged</div>
+          </div>
+          <div class="climate-stat">
+            <div class="stat-label">Mean Min Temp</div>
+            <div class="stat-value">${tmin}°F</div>
+            <div class="stat-unit">daily min, averaged</div>
+          </div>
+          <div class="climate-stat">
+            <div class="stat-label">Avg Freeze Days</div>
+            <div class="stat-value">${avgFreeze}</div>
+            <div class="stat-unit">days/yr below 32°F</div>
+          </div>
+          <div class="climate-stat">
+            <div class="stat-label">Growing Season</div>
+            <div class="stat-value">${avgGrowDays}</div>
+            <div class="stat-unit">days/yr above 50°F</div>
+          </div>
+          <div class="climate-stat">
+            <div class="stat-label">Mean Wind Speed</div>
+            <div class="stat-value">${wind}</div>
+            <div class="stat-unit">mph</div>
+          </div>
+          <div class="climate-stat">
+            <div class="stat-label">Solar Radiation</div>
+            <div class="stat-value">${solar}</div>
+            <div class="stat-unit">MJ/m² per day</div>
+          </div>
+          <div class="climate-stat wide" style="border-color:#bbb; background:#f0f0eb;">
+            <div class="stat-label">Grid Cell Snap</div>
+            <div style="font-size:12px; color:#444; margin-top:4px;">
+              Input: <strong>${lat.toFixed(5)}, ${lon.toFixed(5)}</strong> &nbsp;→&nbsp;
+              ERA5 cell center: <strong>${snapLat}, ${snapLon}</strong>
+              &nbsp;(~${Math.round(distKm(lat,lon,parseFloat(snapLat),parseFloat(snapLon))*10)/10} km offset)
+            </div>
+          </div>
+        </div>`;
+
+    } catch(e) {
+      setStatus(status, `Fetch failed: ${e.message}`, 'error');
+      document.getElementById('climateOutput').innerHTML = '';
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  // ── Helpers ───────────────────────────────────────────────────────────────
+  function setStatus(el, msg, cls) {
+    el.textContent = msg;
+    el.className = 'status' + (cls ? ' ' + cls : '');
+  }
+
+  function distKm(lat1, lon1, lat2, lon2) {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat/2)**2 +
+              Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLon/2)**2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  }
+
+  // Enter key on address
+  document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('address').addEventListener('keydown', e => {
+      if (e.key === 'Enter') geocode();
+    });
+    document.getElementById('coordsIn').addEventListener('keydown', e => {
+      if (e.key === 'Enter') fetchClimate();
+    });
+  });
+</script>
+</body>
+</html>
