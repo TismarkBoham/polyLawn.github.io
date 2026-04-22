@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Step 2 — Soil Data</title>
+<style>
+  body { font-family: sans-serif; max-width: 560px; margin: 60px auto; padding: 0 24px; color: #1a1a1a; }
+  h2 { margin-bottom: 4px; }
+  p.sub { color: #666; font-size: 14px; margin: 0 0 24px; }
+
+  input { width: 100%; padding: 10px; font-size: 15px; border: 1px solid #ccc;
+          border-radius: 6px; box-sizing: border-box; }
+  button { margin-top: 10px; width: 100%; padding: 11px; font-size: 15px;
+           background: #2d6e45; color: white; border: none; border-radius: 6px;
+           cursor: pointer; }
+  button:hover { background: #235536; }
+  button:disabled { background: #999; cursor: default; }
+
+  #error { color: #c00; margin-top: 10px; font-size: 14px; display: none; }
+
+  /* geocode result */
+  #geo-result { margin-top: 14px; padding: 10px 14px; background: #f0f7f2;
+                border-radius: 6px; display: none; font-size: 13px; color: #444; }
+  #geo-result strong { color: #2d6e45; font-size: 15px; }
+
+  /* loading */
+  #loading { display: none; margin-top: 20px; font-size: 14px; color: #666; }
+  .dots::after { content: ''; animation: dots 1.2s steps(3,end) infinite; }
+  @keyframes dots { 0%{content:''} 33%{content:'.'} 66%{content:'..'} 100%{content:'...'} }
+
+  /* soil result */
+  #soil-result { display: none; margin-top: 20px; }
+  .soil-header { font-size: 18px; font-weight: bold; margin-bottom: 2px; }
+  .soil-series { font-size: 13px; color: #888; margin-bottom: 16px; }
+
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .card { background: #f7f7f5; border-radius: 8px; padding: 12px 14px; }
+  .card .label { font-size: 11px; text-transform: uppercase; letter-spacing: .6px;
+                 color: #999; margin-bottom: 4px; }
+  .card .value { font-size: 20px; font-weight: bold; color: #1a1a1a; }
+  .card .unit  { font-size: 12px; color: #aaa; margin-left: 2px; }
+  .card .note  { font-size: 11px; color: #888; margin-top: 3px; }
+
+  /* bar */
+  .bar-wrap { height: 5px; background: #e0e0e0; border-radius: 3px; margin-top: 6px; }
+  .bar-fill { height: 5px; border-radius: 3px; background: #2d6e45; }
+
+  .source-note { font-size: 11px; color: #bbb; margin-top: 16px; }
+  .fallback-note { font-size: 12px; color: #e07b00; margin-top: 10px; }
+</style>
+</head>
+<body>
+
+<h2>Step 2 — Soil Data</h2>
+<p class="sub">Enter an address. We geocode it with Photon, then query the live
+  SSURGO Soil Data Access API for the dominant soil at that exact point.</p>
+
+<input type="text" id="address" placeholder="e.g. 847 Fall Creek Dr, Ithaca NY" />
+<button id="btn" onclick="run()">Look up soil</button>
+<div id="error"></div>
+
+<div id="geo-result">
+  <strong id="geo-name"></strong><br>
+  Lat <span id="geo-lat"></span> &nbsp;·&nbsp; Lon <span id="geo-lon"></span>
+</div>
+
+<div id="loading">
+  Querying SSURGO<span class="dots"></span>
+</div>
+
+<div id="soil-result">
+  <div class="soil-header" id="s-muname"></div>
+  <div class="soil-series" id="s-compname"></div>
+
+  <div class="grid">
+    <div class="card">
+      <div class="label">pH</div>
+      <div class="value" id="s-ph">—</div>
+      <div class="note" id="s-ph-note"></div>
+      <div class="bar-wrap"><div class="bar-fill" id="s-ph-bar" style="width:0%"></div></div>
+    </div>
+    <div class="card">
+      <div class="label">Drainage</div>
+      <div class="value" id="s-drain" style="font-size:15px;padding-top:4px">—</div>
+    </div>
+    <div class="card">
+      <div class="label">Available Water Capacity</div>
+      <div class="value" id="s-awc">—<span class="unit">in/in</span></div>
+      <div class="note">higher = more drought buffer</div>
+      <div class="bar-wrap"><div class="bar-fill" id="s-awc-bar" style="width:0%"></div></div>
+    </div>
+    <div class="card">
+      <div class="label">Organic Matter</div>
+      <div class="value" id="s-om">—<span class="unit">%</span></div>
+      <div class="bar-wrap"><div class="bar-fill" id="s-om-bar" style="width:0%"></div></div>
+    </div>
+    <div class="card">
+      <div class="label">Texture (surface)</div>
+      <div class="value" id="s-texture" style="font-size:15px;padding-top:4px">—</div>
+    </div>
+    <div class="card">
+      <div class="label">Sand / Silt / Clay</div>
+      <div class="value" id="s-ssc" style="font-size:15px;padding-top:4px">—</div>
+    </div>
+  </div>
+
+  <div class="fallback-note" id="fallback-note" style="display:none"></div>
+  <div class="source-note" id="source-note"></div>
+</div>
+
+<script>
+var lat = null, lon = null;
+
+// ── Photon geocoder ──────────────────────────────────────────────────
+async function geocode(addr) {
+  var url = 'https://photon.komoot.io/api/?q=' + encodeURIComponent(addr) + '&limit=1&lang=en';
+  var res  = await fetch(url);
+  var data = await res.json();
+  if (!data.features || !data.features.length) return null;
+  var f = data.features[0];
+  var p = f.properties;
+  return {
+    lat:  f.geometry.coordinates[1],
+    lon:  f.geometry.coordinates[0],
+    name: [p.name, p.city || p.county, p.state, p.country].filter(Boolean).join(', ')
+  };
+}
+
+// ── SSURGO Soil Data Access query ────────────────────────────────────
+// Free public REST endpoint — no API key needed.
+// SDA_Get_Mukey_from_intersection_with_WktWgs84 finds the mapunit
+// whose polygon contains our point.  WKT uses (lon lat) order.
+// We join through to chorizon for the surface horizon (hzdept_r = 0).
+async function fetchSSURGO(lat, lon) {
+  var sql = [
+    "SELECT TOP 1",
+    "  mu.muname,",
+    "  co.compname, co.comppct_r, co.drainagecl,",
+    "  co.ph1to1h2o_r  AS ph_low,",
+    "  co.ph1to1h2o_h  AS ph_high,",
+    "  co.awc_r        AS awc,",
+    "  co.om_r         AS om,",
+    "  ch.texture      AS texture,",
+    "  ch.sandtotal_r  AS sand,",
+    "  ch.silttotal_r  AS silt,",
+    "  ch.claytotal_r  AS clay",
+    "FROM mapunit mu",
+    "  INNER JOIN component co",
+    "    ON co.mukey = mu.mukey",
+    "  INNER JOIN chorizon ch",
+    "    ON ch.cokey = co.cokey",
+    "  INNER JOIN SDA_Get_Mukey_from_intersection_with_WktWgs84(",
+    "    'point(" + lon + " " + lat + ")'",
+    "  ) k ON mu.mukey = k.mukey",
+    "WHERE co.majcompflag = 'Yes'",
+    "  AND ch.hzdept_r = 0",   // surface horizon only
+    "ORDER BY co.comppct_r DESC"
+  ].join(' ');
+
+  var resp = await fetch(
+    'https://sdmdataaccess.sc.egov.usda.gov/tabular/post.rest',
+    {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body:    'query=' + encodeURIComponent(sql) + '&format=JSON'
+    }
+  );
+  if (!resp.ok) throw new Error('SSURGO returned HTTP ' + resp.status);
+  var json = await resp.json();
+
+  var table = json && json.Table;
+  if (!table || table.length < 2) return null;  // no data for this point
+
+  // First row is headers, second row is our data
+  var headers = table[0].map(function(h){ return h.toLowerCase(); });
+  var row     = table[1];
+  function col(name) {
+    var i = headers.indexOf(name);
+    return (i >= 0 && row[i] !== null) ? row[i] : null;
+  }
+
+  var phLow  = parseFloat(col('ph_low'));
+  var phHigh = parseFloat(col('ph_high'));
+  // ph_high is often null in SDA; estimate from phLow
+  if (!isNaN(phLow) && isNaN(phHigh)) phHigh = +(phLow + 0.7).toFixed(1);
+
+  return {
+    muname:    col('muname')    || 'Unknown',
+    compname:  col('compname')  || '',
+    comppct:   parseFloat(col('comppct_r')) || null,
+    drainage:  col('drainagecl')|| 'unknown',
+    phLow:     isNaN(phLow)  ? null : phLow,
+    phHigh:    isNaN(phHigh) ? null : phHigh,
+    awc:       parseFloat(col('awc'))     || null,
+    om:        parseFloat(col('om'))      || null,
+    texture:   col('texture')  || 'unknown',
+    sand:      parseFloat(col('sand'))    || null,
+    silt:      parseFloat(col('silt'))    || null,
+    clay:      parseFloat(col('clay'))    || null,
+  };
+}
+
+// ── Fallback: if SSURGO returns nothing (water, outside coverage etc)
+// we use a simple lookup table of typical Northeast soil types keyed
+// to rough lat bands — better than nothing.
+function fallbackSoil(lat, lon) {
+  // Very rough — just gives plausible Northeast defaults
+  var ph   = lat > 43.5 ? 5.2 : lat > 42 ? 5.8 : 6.2;
+  var drain= lat > 43.5 ? 'moderately well' : 'well';
+  return {
+    muname:   'No SSURGO coverage at this point',
+    compname: 'Regional estimate (fallback)',
+    drainage: drain,
+    phLow:    ph,
+    phHigh:   +(ph + 0.8).toFixed(1),
+    awc:      0.15,
+    om:       3.0,
+    texture:  'loam',
+    sand: 40, silt: 40, clay: 20,
+    isFallback: true
+  };
+}
+
+// ── Render results ───────────────────────────────────────────────────
+function renderSoil(s) {
+  document.getElementById('s-muname').textContent   = s.muname;
+  document.getElementById('s-compname').textContent = s.compname
+    ? s.compname + (s.comppct ? '  (' + Math.round(s.comppct) + '% of map unit)' : '')
+    : '';
+
+  // pH
+  var phStr = (s.phLow && s.phHigh)
+    ? s.phLow.toFixed(1) + '–' + s.phHigh.toFixed(1)
+    : (s.phLow ? s.phLow.toFixed(1) : '—');
+  document.getElementById('s-ph').textContent = phStr;
+  // pH bar: scale 4–8 → 0–100%
+  var phMid = ((s.phLow||6) + (s.phHigh||6.8)) / 2;
+  document.getElementById('s-ph-bar').style.width = Math.round(((phMid - 4) / 4) * 100) + '%';
+  var phNote = phMid < 5.5 ? 'strongly acid — good for moss/fescue'
+             : phMid < 6.0 ? 'moderately acid — fine for fescue/clover'
+             : phMid < 7.0 ? 'near-neutral — good for most species'
+             : 'alkaline — may limit some species';
+  document.getElementById('s-ph-note').textContent = phNote;
+
+  // Drainage
+  document.getElementById('s-drain').textContent = s.drainage || '—';
+
+  // AWC
+  var awcVal = s.awc != null ? s.awc.toFixed(2) : '—';
+  document.getElementById('s-awc').innerHTML = awcVal + '<span class="unit">in/in</span>';
+  document.getElementById('s-awc-bar').style.width = s.awc ? Math.min(100, Math.round(s.awc / 0.25 * 100)) + '%' : '0%';
+
+  // OM
+  var omVal = s.om != null ? s.om.toFixed(1) : '—';
+  document.getElementById('s-om').innerHTML = omVal + '<span class="unit">%</span>';
+  document.getElementById('s-om-bar').style.width = s.om ? Math.min(100, Math.round(s.om / 8 * 100)) + '%' : '0%';
+
+  // Texture
+  document.getElementById('s-texture').textContent = s.texture || '—';
+
+  // Sand/Silt/Clay
+  if (s.sand != null && s.silt != null && s.clay != null) {
+    document.getElementById('s-ssc').textContent =
+      Math.round(s.sand) + '% / ' + Math.round(s.silt) + '% / ' + Math.round(s.clay) + '%';
+  } else {
+    document.getElementById('s-ssc').textContent = '—';
+  }
+
+  // Fallback note
+  var fb = document.getElementById('fallback-note');
+  if (s.isFallback) {
+    fb.textContent = '⚠ SSURGO returned no data here (water body, outside US, or unmapped area). Showing regional estimate.';
+    fb.style.display = 'block';
+  } else {
+    fb.style.display = 'none';
+  }
+
+  document.getElementById('source-note').textContent =
+    'Source: USDA SSURGO Soil Data Access · sdmdataaccess.sc.egov.usda.gov · free public API, no key required';
+
+  document.getElementById('soil-result').style.display = 'block';
+}
+
+// ── Main ─────────────────────────────────────────────────────────────
+async function run() {
+  var addr  = document.getElementById('address').value.trim();
+  var errEl = document.getElementById('error');
+  var btn   = document.getElementById('btn');
+  errEl.style.display = 'none';
+  document.getElementById('geo-result').style.display   = 'none';
+  document.getElementById('soil-result').style.display  = 'none';
+  document.getElementById('loading').style.display      = 'none';
+
+  if (!addr) {
+    errEl.textContent    = 'Please enter an address.';
+    errEl.style.display  = 'block';
+    return;
+  }
+
+  btn.disabled    = true;
+  btn.textContent = 'Looking up…';
+
+  try {
+    // Step 1: geocode
+    var geo = await geocode(addr);
+    if (!geo) throw new Error('Address not found — try being more specific.');
+    lat = geo.lat; lon = geo.lon;
+
+    document.getElementById('geo-name').textContent = geo.name;
+    document.getElementById('geo-lat').textContent  = lat.toFixed(6);
+    document.getElementById('geo-lon').textContent  = lon.toFixed(6);
+    document.getElementById('geo-result').style.display = 'block';
+
+    // Step 2: SSURGO
+    document.getElementById('loading').style.display = 'block';
+    var soil = null;
+    try {
+      soil = await fetchSSURGO(lat, lon);
+    } catch(e) {
+      console.warn('SSURGO error:', e);
+    }
+    document.getElementById('loading').style.display = 'none';
+
+    if (!soil) soil = fallbackSoil(lat, lon);
+    renderSoil(soil);
+
+  } catch(e) {
+    errEl.textContent   = e.message;
+    errEl.style.display = 'block';
+  }
+
+  btn.disabled    = false;
+  btn.textContent = 'Look up soil';
+}
+
+document.getElementById('address').addEventListener('keydown', function(e){
+  if (e.key === 'Enter') run();
+});
+</script>
+</body>
+</html>
