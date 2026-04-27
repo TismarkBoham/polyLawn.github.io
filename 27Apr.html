@@ -1,0 +1,1331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Polylawn — Lawn Suitability Engine</title>
+<style>
+/*
+ * POLYLAWN — Polyculture Lawn Suitability Engine v0.5
+ * Clean, readable interface. All science intact.
+ * Climate fix: archive-api.open-meteo.com with daily data + JS aggregation
+ */
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --green:   #2d7a4f;
+  --green-l: #e8f5ee;
+  --green-m: #5aab7c;
+  --blue:    #2563a8;
+  --blue-l:  #eef4fd;
+  --orange:  #c25a00;
+  --orange-l:#fff3e6;
+  --red:     #b91c1c;
+  --red-l:   #fef2f2;
+  --ink:     #1a1a1a;
+  --mid:     #4a4a4a;
+  --muted:   #767676;
+  --border:  #d8d8d8;
+  --bg:      #f7f7f5;
+  --white:   #ffffff;
+  --radius:  8px;
+  --shadow:  0 1px 4px rgba(0,0,0,.08);
+}
+
+html { scroll-behavior: smooth; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+       font-size: 15px; line-height: 1.6; background: var(--bg); color: var(--ink); }
+
+/* ── HEADER ── */
+header { background: var(--white); border-bottom: 1px solid var(--border);
+         padding: 0 24px; display: flex; align-items: center; gap: 14px; height: 56px; }
+.logo { font-size: 18px; font-weight: 700; color: var(--green); letter-spacing: -.3px; }
+.logo-sub { font-size: 13px; color: var(--muted); }
+header nav { margin-left: auto; display: flex; gap: 20px; }
+header nav a { font-size: 13px; color: var(--muted); text-decoration: none; }
+header nav a:hover { color: var(--green); }
+
+/* ── LAYOUT ── */
+.page { max-width: 860px; margin: 0 auto; padding: 32px 20px 80px; }
+
+/* ── SEARCH BOX ── */
+.search-card { background: var(--white); border: 1px solid var(--border);
+               border-radius: var(--radius); padding: 24px 28px; margin-bottom: 28px;
+               box-shadow: var(--shadow); }
+.search-card h2 { font-size: 17px; font-weight: 600; margin-bottom: 6px; color: var(--ink); }
+.search-card p  { font-size: 13px; color: var(--muted); margin-bottom: 18px; line-height: 1.5; }
+
+.search-row { display: flex; gap: 10px; flex-wrap: wrap; }
+.search-row input { flex: 1; min-width: 200px; padding: 10px 14px; font-size: 15px;
+                    border: 1px solid var(--border); border-radius: var(--radius);
+                    outline: none; font-family: inherit; background: var(--bg); }
+.search-row input:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(45,122,79,.1); }
+.search-row button { padding: 10px 22px; background: var(--green); color: #fff; font-size: 15px;
+                     font-weight: 600; border: none; border-radius: var(--radius); cursor: pointer;
+                     font-family: inherit; white-space: nowrap; }
+.search-row button:hover { background: #256040; }
+.search-row button:disabled { background: var(--green-m); cursor: default; }
+
+.options-row { display: flex; gap: 24px; margin-top: 14px; flex-wrap: wrap; align-items: center; }
+.option-field { display: flex; align-items: center; gap: 8px; }
+.option-field label { font-size: 13px; color: var(--muted); white-space: nowrap; }
+.option-field input[type="number"] { width: 72px; padding: 6px 10px; font-size: 14px;
+  border: 1px solid var(--border); border-radius: 6px; font-family: inherit;
+  background: var(--bg); outline: none; }
+.option-field input:focus { border-color: var(--green); }
+.option-field .hint { font-size: 12px; color: var(--muted); }
+
+/* ── PIPELINE ── */
+#pipeline { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius);
+            padding: 18px 22px; margin-bottom: 20px; display: none; }
+.pipe-row { display: flex; align-items: center; gap: 12px; padding: 7px 0;
+            border-bottom: 1px solid #f0f0f0; font-size: 13px; }
+.pipe-row:last-child { border-bottom: none; }
+.pipe-icon { font-size: 16px; width: 22px; text-align: center; flex-shrink: 0; }
+.pipe-label { flex: 1; color: var(--mid); }
+.pipe-status { font-size: 12px; font-weight: 500; }
+.ps-wait { color: #bbb; }
+.ps-run  { color: var(--orange); }
+.ps-ok   { color: var(--green); }
+.ps-err  { color: var(--red); }
+
+/* ── ERROR ── */
+#error-box { display: none; background: var(--red-l); border: 1px solid #fca5a5;
+             border-radius: var(--radius); padding: 12px 16px; color: var(--red);
+             font-size: 14px; margin-bottom: 20px; }
+
+/* ── RESULTS ── */
+#results { display: none; }
+
+/* ── LOCATION BAR ── */
+.loc-bar { background: var(--white); border: 1px solid var(--border);
+           border-radius: var(--radius); padding: 14px 20px; margin-bottom: 24px;
+           box-shadow: var(--shadow); display: flex; gap: 20px; align-items: flex-start;
+           flex-wrap: wrap; }
+.loc-main { flex: 1; }
+.loc-name { font-size: 17px; font-weight: 700; color: var(--ink); margin-bottom: 3px; }
+.loc-coords { font-size: 12px; color: var(--muted); }
+.loc-badges { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+.badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 12px;
+         font-weight: 500; border: 1px solid; }
+.badge-green  { background: var(--green-l); color: var(--green);  border-color: #a7d9bc; }
+.badge-blue   { background: var(--blue-l);  color: var(--blue);   border-color: #a9c5e8; }
+.badge-orange { background: var(--orange-l);color: var(--orange); border-color: #fbbf78; }
+
+/* ── SECTION WRAPPERS ── */
+.section { background: var(--white); border: 1px solid var(--border);
+           border-radius: var(--radius); margin-bottom: 20px; box-shadow: var(--shadow); overflow: hidden; }
+.section-head { display: flex; align-items: center; justify-content: space-between;
+                padding: 14px 20px; cursor: pointer; user-select: none; border-bottom: 1px solid var(--border); }
+.section-head:hover { background: #fafaf8; }
+.section-head-left { display: flex; align-items: center; gap: 10px; }
+.section-icon { font-size: 17px; }
+.section-title { font-size: 15px; font-weight: 600; color: var(--ink); }
+.section-sub   { font-size: 12px; color: var(--muted); margin-top: 1px; }
+.section-toggle { font-size: 12px; color: var(--muted); padding: 3px 10px;
+                  border: 1px solid var(--border); border-radius: 4px; background: var(--bg); }
+.section-body { padding: 20px; }
+.section-body.closed { display: none; }
+
+/* ── RECOMMENDATION CARDS ── */
+.rec-intro { font-size: 13px; color: var(--muted); margin-bottom: 18px; line-height: 1.5; }
+.rec-grid  { display: grid; grid-template-columns: repeat(auto-fill, minmax(155px, 1fr)); gap: 12px; }
+.rec-card  { border: 2px solid var(--border); border-radius: var(--radius); padding: 14px;
+             cursor: pointer; transition: all .15s; position: relative; background: var(--white); }
+.rec-card:hover { border-color: var(--green); box-shadow: 0 2px 8px rgba(45,122,79,.12); }
+.rec-card.top1 { border-color: var(--green); background: var(--green-l); }
+.rec-rank  { position: absolute; top: 10px; right: 12px; font-size: 11px; color: var(--muted);
+             font-weight: 600; }
+.rec-icon  { font-size: 26px; margin-bottom: 8px; }
+.rec-name  { font-size: 13px; font-weight: 700; color: var(--ink); margin-bottom: 2px; }
+.rec-type  { font-size: 11px; color: var(--muted); margin-bottom: 10px; }
+.rec-si    { font-size: 24px; font-weight: 700; color: var(--green); line-height: 1; }
+.rec-si-lbl{ font-size: 10px; color: var(--muted); margin-bottom: 6px; }
+.rec-bar-wrap { height: 4px; background: #e5e5e5; border-radius: 2px; margin-bottom: 10px; }
+.rec-bar  { height: 4px; border-radius: 2px; background: var(--green); }
+.rec-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; }
+.rec-tag  { font-size: 10px; background: var(--green-l); color: var(--green);
+            padding: 2px 7px; border-radius: 3px; }
+.rec-why  { font-size: 11px; color: var(--muted); line-height: 1.5; border-top: 1px solid var(--border); padding-top: 8px; }
+
+/* ── MIX BAR ── */
+.mix-bar-wrap { height: 28px; border-radius: 6px; overflow: hidden; display: flex; gap: 2px; margin-bottom: 10px; }
+.mix-bar-seg  { display: flex; align-items: center; justify-content: center;
+                font-size: 11px; font-weight: 600; color: #fff; overflow: hidden; }
+.mix-legend   { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12px; color: var(--muted); }
+.mix-legend span { display: flex; align-items: center; gap: 5px; }
+.mix-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+/* ── CALENDAR ── */
+.cal-row { display: flex; gap: 14px; padding: 9px 0; border-bottom: 1px solid #f0f0f0; font-size: 13px; }
+.cal-row:last-child { border-bottom: none; }
+.cal-when { min-width: 100px; font-weight: 600; color: var(--orange); flex-shrink: 0; }
+.cal-what { color: var(--mid); line-height: 1.5; }
+
+/* ── SI TABLE ── */
+.si-meta { font-size: 12px; color: var(--muted); background: var(--bg);
+           border-radius: 6px; padding: 10px 14px; margin-bottom: 16px; line-height: 1.7; }
+.si-meta strong { color: var(--ink); }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { text-align: left; padding: 8px 10px; font-size: 11px; font-weight: 600; color: var(--muted);
+     text-transform: uppercase; letter-spacing: .5px; border-bottom: 2px solid var(--border);
+     white-space: nowrap; background: var(--bg); }
+td { padding: 8px 10px; border-bottom: 1px solid #f0f0f0; vertical-align: middle; }
+tr:hover td { background: #fafaf8; }
+tr.sel-row td { background: var(--green-l); }
+tr.sel-row:hover td { background: #daf0e4; }
+.plant-cell { font-weight: 600; }
+.type-cell  { color: var(--muted); font-size: 12px; }
+.score-cell { font-weight: 700; font-size: 14px; }
+.score-green { color: var(--green); }
+.score-orange{ color: var(--orange); }
+.score-red   { color: var(--red); }
+.sel-badge { display: inline-block; background: var(--green); color: #fff;
+             font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 3px; margin-left: 6px; }
+.var-pip { display: inline-block; width: 18px; text-align: center; font-size: 12px;
+           font-weight: 600; cursor: help; }
+
+/* ── EXPLAIN PANEL ── */
+.explain-panel { display: none; background: var(--bg); border-top: 1px solid var(--border);
+                 padding: 16px 20px; }
+.explain-panel.open { display: block; }
+.explain-desc { font-size: 13px; color: var(--mid); margin-bottom: 14px; line-height: 1.5;
+                padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+.explain-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+@media(max-width:520px){ .explain-grid { grid-template-columns: 1fr; } }
+.ev-card { background: var(--white); border: 1px solid var(--border); border-radius: 6px; padding: 12px; }
+.ev-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 4px; }
+.ev-value { font-size: 13px; font-weight: 600; color: var(--ink); margin-bottom: 3px; }
+.ev-note  { font-size: 11px; color: var(--muted); line-height: 1.5; }
+.ev-bar-wrap { height: 3px; background: #e5e5e5; border-radius: 2px; margin-top: 6px; }
+.ev-bar { height: 3px; border-radius: 2px; }
+.explain-sources { font-size: 11px; color: var(--muted); border-top: 1px solid var(--border);
+                   padding-top: 10px; line-height: 1.8; }
+.explain-sources a { color: var(--blue); text-decoration: none; }
+
+/* ── SOIL / CLIMATE DATA CARDS ── */
+.data-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px,1fr)); gap: 10px; }
+.data-card { background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 12px 14px; }
+.data-card.wide { grid-column: span 2; }
+@media(max-width:400px){ .data-card.wide { grid-column: span 1; } }
+.dc-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 4px; }
+.dc-value { font-size: 20px; font-weight: 700; color: var(--ink); line-height: 1.1; }
+.dc-unit  { font-size: 12px; color: var(--muted); margin-left: 2px; font-weight: 400; }
+.dc-desc  { font-size: 11px; color: var(--muted); margin-top: 3px; }
+.dc-bar-wrap{ height: 3px; background: #e5e5e5; border-radius: 2px; margin-top: 7px; }
+.dc-bar     { height: 3px; border-radius: 2px; background: var(--green); }
+
+/* ── DEPTH TABS ── */
+.depth-tabs { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; }
+.depth-tab  { padding: 5px 14px; font-size: 12px; border: 1px solid var(--border);
+              border-radius: 20px; cursor: pointer; color: var(--muted);
+              background: var(--bg); font-family: inherit; }
+.depth-tab.active { background: var(--green); color: #fff; border-color: var(--green); }
+
+/* ── SPARKLINES ── */
+.sparkline { display: flex; align-items: flex-end; gap: 3px; height: 40px; margin-top: 10px; }
+.spark-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.spark-bar { width: 100%; border-radius: 2px 2px 0 0; min-height: 2px; }
+.spark-lbl { font-size: 8px; color: var(--muted); }
+
+/* ── TEXTURE BARS ── */
+.tex-row { display: flex; gap: 10px; margin-top: 10px; }
+.tex-item { flex: 1; }
+.tex-lbl  { font-size: 11px; color: var(--muted); margin-bottom: 3px; }
+.tex-wrap { height: 4px; background: #e5e5e5; border-radius: 2px; }
+.tex-fill { height: 4px; border-radius: 2px; }
+
+/* ── SAVINGS ── */
+.sav-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px,1fr)); gap: 10px; margin-bottom: 16px; }
+.sav-card { background: var(--green-l); border: 1px solid #a7d9bc; border-radius: 6px; padding: 14px; }
+.sav-lbl  { font-size: 11px; color: var(--green); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 4px; }
+.sav-num  { font-size: 24px; font-weight: 700; color: var(--green); }
+.sav-desc { font-size: 11px; color: var(--mid); margin-top: 4px; line-height: 1.4; }
+.eco-list { font-size: 13px; color: var(--mid); line-height: 2; border-top: 1px solid var(--border); padding-top: 14px; }
+
+/* ── FOOTER ACTIONS ── */
+.footer-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 24px; }
+.action-btn { padding: 9px 18px; font-size: 13px; border: 1px solid var(--border);
+              border-radius: var(--radius); cursor: pointer; font-family: inherit;
+              background: var(--white); color: var(--mid); }
+.action-btn:hover { border-color: var(--green); color: var(--green); }
+
+.sources-note { font-size: 12px; color: var(--muted); line-height: 2; border-top: 1px solid var(--border); padding-top: 16px; }
+.sources-note a { color: var(--blue); }
+
+.offset-note { font-size: 12px; color: var(--orange); margin-bottom: 12px;
+               background: var(--orange-l); padding: 8px 12px; border-radius: 5px; }
+
+@media print {
+  header nav, .search-card, #pipeline, .section-toggle, .footer-actions { display: none !important; }
+  .section-body.closed { display: block !important; }
+  body { background: #fff; font-size: 12px; }
+  .section { box-shadow: none; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">🌿 Polylawn</div>
+  <div class="logo-sub">Lawn Suitability Engine</div>
+  <nav>
+    <a href="#how">How it works</a>
+    <a href="https://github.com" target="_blank">GitHub</a>
+  </nav>
+</header>
+
+<div class="page">
+
+  <!-- SEARCH -->
+  <div class="search-card">
+    <h2>Find the right plants for your lawn</h2>
+    <p>Enter your address. We fetch live soil and climate data for that exact location, score 17 plant species against it, and recommend the best polyculture mix for your site.</p>
+    <div class="search-row">
+      <input type="text" id="address" placeholder="e.g. 847 Fall Creek Dr, Ithaca NY" />
+      <button id="btn" onclick="run()">Analyse →</button>
+    </div>
+    <div class="options-row">
+      <div class="option-field">
+        <label for="shade-in">Shade cover</label>
+        <input type="number" id="shade-in" min="0" max="100" value="0">
+        <span class="hint">% of lawn in shade (0 = full sun)</span>
+      </div>
+      <div class="option-field">
+        <label for="acres-in">Lawn size</label>
+        <input type="number" id="acres-in" min="0.01" max="20" step="0.05" value="0.25">
+        <span class="hint">acres (city lot ≈ 0.1 ac)</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- PIPELINE -->
+  <div id="pipeline">
+    <div class="pipe-row"><div class="pipe-icon">📍</div><div class="pipe-label">Geocoding address (Photon / OSM)</div><div class="pipe-status ps-wait" id="ps-geo">Waiting</div></div>
+    <div class="pipe-row"><div class="pipe-icon">🪨</div><div class="pipe-label">Fetching soil data (ISRIC SoilGrids, 250 m)</div><div class="pipe-status ps-wait" id="ps-soil">Waiting</div></div>
+    <div class="pipe-row"><div class="pipe-icon">🌤</div><div class="pipe-label">Fetching climate data (Open-Meteo ERA5, 2010–2020)</div><div class="pipe-status ps-wait" id="ps-clim">Waiting</div></div>
+    <div class="pipe-row"><div class="pipe-icon">🌱</div><div class="pipe-label">Scoring 17 species — suitability index</div><div class="pipe-status ps-wait" id="ps-si">Waiting</div></div>
+    <div class="pipe-row"><div class="pipe-icon">✅</div><div class="pipe-label">Selecting top 5 and building mix</div><div class="pipe-status ps-wait" id="ps-sel">Waiting</div></div>
+  </div>
+
+  <div id="error-box"></div>
+
+  <div id="results">
+
+    <!-- LOCATION -->
+    <div class="loc-bar">
+      <div class="loc-main">
+        <div class="loc-name" id="r-name"></div>
+        <div class="loc-coords" id="r-coords"></div>
+        <div class="loc-badges" id="r-badges"></div>
+      </div>
+    </div>
+
+    <!-- RECOMMENDATION -->
+    <div class="section">
+      <div class="section-head" onclick="toggleSec('rec')">
+        <div class="section-head-left">
+          <div class="section-icon">🌿</div>
+          <div><div class="section-title">Recommended plant mix</div>
+               <div class="section-sub" id="rec-sub-head">Top 5 species for your site</div></div>
+        </div>
+        <div class="section-toggle" id="rec-tog">▲ Hide</div>
+      </div>
+      <div class="section-body" id="rec-body">
+        <p class="rec-intro" id="rec-intro"></p>
+        <div class="rec-grid" id="rec-grid"></div>
+        <p style="font-size:12px;color:var(--muted);margin-top:12px">
+          Click any plant card to see the full variable-by-variable breakdown in the Suitability Index table below.
+        </p>
+      </div>
+    </div>
+
+    <!-- MIX RATIOS -->
+    <div class="section">
+      <div class="section-head" onclick="toggleSec('mix')">
+        <div class="section-head-left">
+          <div class="section-icon">📊</div>
+          <div><div class="section-title">Seed mix proportions</div>
+               <div class="section-sub">How much of each species to seed</div></div>
+        </div>
+        <div class="section-toggle" id="mix-tog">▲ Hide</div>
+      </div>
+      <div class="section-body" id="mix-body">
+        <div id="mix-bar-div"></div>
+        <div id="mix-legend-div" class="mix-legend" style="margin-top:10px"></div>
+        <div id="mix-rate-table" style="margin-top:18px"></div>
+        <p style="font-size:12px;color:var(--muted);margin-top:10px;line-height:1.5">
+          Mix % = proportional seeding weight. Oz/1,000 sqft are literature-derived starting points.
+          Actual rates vary by seed source — follow packet label.
+        </p>
+      </div>
+    </div>
+
+    <!-- PLANTING CALENDAR -->
+    <div class="section">
+      <div class="section-head" onclick="toggleSec('cal')">
+        <div class="section-head-left">
+          <div class="section-icon">📅</div>
+          <div><div class="section-title">Planting calendar</div>
+               <div class="section-sub">Zone-specific schedule for your location</div></div>
+        </div>
+        <div class="section-toggle" id="cal-tog">▲ Hide</div>
+      </div>
+      <div class="section-body" id="cal-body"></div>
+    </div>
+
+    <!-- SUITABILITY INDEX -->
+    <div class="section">
+      <div class="section-head" onclick="toggleSec('si')">
+        <div class="section-head-left">
+          <div class="section-icon">📐</div>
+          <div><div class="section-title">Suitability index — all 17 species</div>
+               <div class="section-sub">Click any row to see why it got that score</div></div>
+        </div>
+        <div class="section-toggle" id="si-tog">▼ Show</div>
+      </div>
+      <div class="section-body closed" id="si-body">
+        <div class="si-meta" id="si-meta"></div>
+        <div style="overflow-x:auto">
+          <table>
+            <thead><tr>
+              <th>Species</th><th>Type</th>
+              <th title="pH match — weight 25%">pH<br><small style="color:#bbb;font-weight:400">×.25</small></th>
+              <th title="Cold hardiness — weight 20%">Cold<br><small style="color:#bbb;font-weight:400">×.20</small></th>
+              <th title="Drought tolerance — weight 20%">Drt<br><small style="color:#bbb;font-weight:400">×.20</small></th>
+              <th title="Shade tolerance — weight 15%">Shd<br><small style="color:#bbb;font-weight:400">×.15</small></th>
+              <th title="Wet soil tolerance — weight 10%">Wet<br><small style="color:#bbb;font-weight:400">×.10</small></th>
+              <th title="Low-nitrogen tolerance — weight 10%">LwN<br><small style="color:#bbb;font-weight:400">×.10</small></th>
+              <th>Score</th>
+            </tr></thead>
+            <tbody id="si-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- SOIL DATA -->
+    <div class="section">
+      <div class="section-head" onclick="toggleSec('soil')">
+        <div class="section-head-left">
+          <div class="section-icon">🪨</div>
+          <div><div class="section-title">Soil data</div>
+               <div class="section-sub">ISRIC SoilGrids v2.0 — 250 m resolution</div></div>
+        </div>
+        <div class="section-toggle" id="soil-tog">▼ Show</div>
+      </div>
+      <div class="section-body closed" id="soil-body">
+        <div id="soil-offset" class="offset-note" style="display:none"></div>
+        <div class="depth-tabs" id="depth-tabs"></div>
+        <div class="data-grid" id="soil-grid"></div>
+      </div>
+    </div>
+
+    <!-- CLIMATE DATA -->
+    <div class="section">
+      <div class="section-head" onclick="toggleSec('clim')">
+        <div class="section-head-left">
+          <div class="section-icon">🌤</div>
+          <div><div class="section-title">Climate normals</div>
+               <div class="section-sub">Open-Meteo ERA5 — 2010–2020 monthly means</div></div>
+        </div>
+        <div class="section-toggle" id="clim-tog">▼ Show</div>
+      </div>
+      <div class="section-body closed" id="clim-body">
+        <div class="data-grid" id="clim-grid"></div>
+      </div>
+    </div>
+
+    <!-- SAVINGS -->
+    <div class="section">
+      <div class="section-head" onclick="toggleSec('sav')">
+        <div class="section-head-left">
+          <div class="section-icon">💚</div>
+          <div><div class="section-title">What you save</div>
+               <div class="section-sub">vs a conventional fertilised monoculture lawn</div></div>
+        </div>
+        <div class="section-toggle" id="sav-tog">▲ Hide</div>
+      </div>
+      <div class="section-body" id="sav-body">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px;flex-wrap:wrap">
+          <label style="font-size:13px;color:var(--muted)">Lawn size:</label>
+          <input type="number" id="sav-acres" min="0.05" max="20" step="0.05" value="0.25"
+                 style="width:80px;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:14px;font-family:inherit"
+                 oninput="renderSavings(parseFloat(this.value)||0.25)">
+          <span style="font-size:13px;color:var(--muted)">acres &nbsp;·&nbsp; city lot ≈ 0.1 &nbsp;·&nbsp; half-acre = 0.5 &nbsp;·&nbsp; football field ≈ 1.3</span>
+        </div>
+        <div class="sav-grid" id="sav-grid"></div>
+        <div class="eco-list" id="eco-list"></div>
+      </div>
+    </div>
+
+    <!-- ACTIONS + SOURCES -->
+    <div class="footer-actions">
+      <button class="action-btn" onclick="doPrint()">⎙ Print / Save PDF</button>
+      <button class="action-btn" id="json-btn" onclick="doJSON()">{ } Copy as JSON</button>
+    </div>
+    <div class="sources-note" id="sources-note"></div>
+
+  </div><!-- /results -->
+
+  <!-- HOW IT WORKS -->
+  <div id="how" style="margin-top:48px;padding-top:32px;border-top:1px solid var(--border)">
+    <h2 style="font-size:18px;margin-bottom:16px;color:var(--ink)">How it works</h2>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px">
+      <div style="background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:18px">
+        <div style="font-size:22px;margin-bottom:8px">📍</div>
+        <div style="font-weight:600;margin-bottom:6px">1. Geocode</div>
+        <div style="font-size:13px;color:var(--muted);line-height:1.5">Photon/OSM converts your address to precise lat/lon coordinates.</div>
+      </div>
+      <div style="background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:18px">
+        <div style="font-size:22px;margin-bottom:8px">🔬</div>
+        <div style="font-weight:600;margin-bottom:6px">2. Site data</div>
+        <div style="font-size:13px;color:var(--muted);line-height:1.5">Live soil properties (SoilGrids, 250 m) and 10-year climate normals (ERA5) fetched in parallel for that exact point.</div>
+      </div>
+      <div style="background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:18px">
+        <div style="font-size:22px;margin-bottom:8px">📐</div>
+        <div style="font-weight:600;margin-bottom:6px">3. Suitability index</div>
+        <div style="font-size:13px;color:var(--muted);line-height:1.5">Each of 17 species is scored across 6 weighted variables. Top 5 form your personalised mix.</div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /page -->
+
+<script>
+/*
+ * Polylawn Engine v0.5
+ * SI methodology: weighted linear combination — Shea et al. (2014)
+ *
+ * Variables & weights:  pH ×0.25 · Cold ×0.20 · Drought ×0.20
+ *                       Shade ×0.15 · Wet ×0.10 · LowN ×0.10
+ *
+ * APIs (all free, no key, open CORS):
+ *   Geocode : photon.komoot.io
+ *   Soil    : rest.isric.org/soilgrids/v2.0  (250 m global)
+ *   Climate : archive-api.open-meteo.com/v1/archive  (ERA5 daily → aggregated)
+ *
+ * Climate API fix (v0.5): switched from climate-api.open-meteo.com (broken
+ *   monthly endpoint) to archive-api.open-meteo.com with daily data over
+ *   2010–2020, aggregated to monthly means in JS.
+ */
+
+// ── GLOBALS ────────────────────────────────────────────────────────
+var geoData = null, soilData = null, climateData = null, siResults = [];
+var shadeInput = 0, acresInput = 0.25;
+
+// ── PLANT DATABASE ─────────────────────────────────────────────────
+var PLANTS = [
+  { id:'ff',  name:'Fine Fescue',       icon:'🌾', type:'Grass',
+    desc:'Fine-bladed cool-season grasses (creeping red, chewings, hard fescue). Very low inputs, excellent shade and drought tolerance. The backbone of Northeast polyculture lawns.',
+    ph:[5.5,7.0], cold:9, drought:8, shade:9, wet:4, lowN:9,
+    tags:['Low mow','Shade champion','Drought hardy'],
+    mpct:35, mow:'2–3×/yr at 3.5"', season:'Late Aug – mid Sep',
+    sources:['Turgeon (2011): pH 5.5–7.0, zone 3 cold hardy','NTEP NY trials: top performer under no-irrigation low-fertility conditions','Penn State Ext: recommended shade-tolerant base grass for the Northeast'] },
+
+  { id:'tf',  name:'Tall Fescue',       icon:'🌿', type:'Grass',
+    desc:'Deep-rooted bunch grass. Heat and traffic tolerant. Deep roots access subsoil moisture during drought. Best for high-traffic areas.',
+    ph:[5.5,7.5], cold:7, drought:8, shade:6, wet:5, lowN:6,
+    tags:['Traffic tolerant','Deep roots','Heat tolerant'],
+    mpct:20, mow:'3–4×/yr at 3.5"', season:'Late Aug – mid Sep',
+    sources:['Turgeon (2011): pH 5.5–7.5, higher fertility than fine fescue','Christians et al. (2017): superior heat tolerance in zones 6+','Cornell Ext: best traffic-tolerant option for Northeast lawns'] },
+
+  { id:'pr',  name:'Perennial Ryegrass', icon:'🌱', type:'Grass',
+    desc:'Fast-germinating nurse grass with excellent wear tolerance. Use at 10–20% to protect slower-establishing fescues during establishment.',
+    ph:[6.0,7.0], cold:7, drought:4, shade:5, wet:6, lowN:5,
+    tags:['Fast germination','Nurse grass','Wear tolerant'],
+    mpct:10, mow:'3–4×/yr at 3"', season:'Late Aug – mid Sep',
+    sources:['Turgeon (2011): pH 6.0–7.0, poor drought tolerance','NTEP NY: highest wear tolerance but fails in drought years','Christians et al.: use 10–20% max as nurse crop component'] },
+
+  { id:'rb',  name:'Rough Bluegrass',   icon:'💧', type:'Grass',
+    desc:'The specialist for wet shaded sites — the only grass that reliably establishes in waterlogged deep shade. Pale blue-green. Spreads by stolons.',
+    ph:[5.5,7.0], cold:8, drought:2, shade:9, wet:9, lowN:5,
+    tags:['Wet shade','Stoloniferous','Cold hardy'],
+    mpct:15, mow:'2–3×/yr at 3"', season:'Late Aug – Sep',
+    sources:['Turgeon (2011): Poa trivialis, requires consistently moist sites','Penn State Ext: only grass for permanently wet shaded areas','Cornell Ext: companion to fine fescue in wet shade transition'] },
+
+  { id:'dw',  name:'Dutch White Clover', icon:'🍀', type:'Legume',
+    desc:'Fixes atmospheric N₂ at 50–200 lbs/acre/year — eliminating all fertiliser need. Flowers May–Oct attract bees continuously. The most important polyculture species.',
+    ph:[6.0,7.5], cold:8, drought:7, shade:5, wet:5, lowN:10,
+    tags:['Nitrogen fixer','Pollinator magnet','No fertiliser'],
+    mpct:10, mow:'4–6×/yr at 3.5"', season:'Apr–May or late Aug',
+    sources:['USDA PLANTS DB: Trifolium repens pH 6.0–7.5 for optimal rhizobium nodulation','RHS: N-fixation rate 50–200 lb/ac/yr in established swards','Christians et al. (2017): equivalent to 1–2 synthetic fertiliser applications/yr'] },
+
+  { id:'mc',  name:'Microclover',        icon:'🍃', type:'Legume',
+    desc:'Dwarf white clover (T. repens var. Pirouette). Leaves 30–50% smaller — blends invisibly into lawn. Slightly more shade-adapted than standard clover. Same N-fixation.',
+    ph:[6.0,7.5], cold:8, drought:6, shade:7, wet:5, lowN:10,
+    tags:['Tiny leaves','Mow tolerant','N-fixer'],
+    mpct:8, mow:'4–6×/yr at 3.5"', season:'Apr–May or late Aug',
+    sources:['USDA PLANTS DB: Trifolium repens var., same pH range as parent','RHS: Pirouette cultivar bred for lawn integration — smaller leaflets','Penn State Ext: tolerates more frequent mowing than standard white clover'] },
+
+  { id:'ct',  name:'Creeping Thyme',    icon:'🌸', type:'Aromatic herb',
+    desc:'Mat-forming herb, fragrant underfoot. Masses of pink flowers in June. Extreme drought hardiness on well-drained soils. Zero mowing once established. Full sun only.',
+    ph:[6.5,8.0], cold:7, drought:9, shade:2, wet:2, lowN:8,
+    tags:['Fragrant','Zero mow','Drought champion'],
+    mpct:5, mow:'0–1×/yr (optional trim)', season:'Apr–Jun or Aug–Sep',
+    sources:['RHS: Thymus serpyllum pH 6.5–8.0, full sun, extremely drought-tolerant','USDA PLANTS DB: well-drained soils only, not shade-tolerant','Penn State Ext: best for dry sunny slopes and sandy poor soils'] },
+
+  { id:'sw',  name:'Sweet Woodruff',    icon:'⭐', type:'Shade groundcover',
+    desc:'Deep-shade groundcover for under dense tree canopies. Star-shaped white spring flowers. Rhizomatous spreader. Suppresses weeds through dense mat. Fragrant when dried.',
+    ph:[5.0,6.5], cold:9, drought:4, shade:10, wet:6, lowN:6,
+    tags:['Deep shade','Spring flowers','Weed suppressor'],
+    mpct:15, mow:'Never', season:'Apr–May (plug or division)',
+    sources:['RHS: Galium odoratum pH 5.0–6.5, deep shade specialist','USDA PLANTS DB: woodland species, requires consistent moisture','Cornell Ext: only non-grass option for >80% canopy shade sites'] },
+
+  { id:'ya',  name:'Yarrow',            icon:'🌻', type:'Native wildflower',
+    desc:'Flat-growing native. Feathery aromatic foliage. Rhizomatous spread. Mow-tolerant. Flat-topped flower clusters attract native bees and beneficial insects all summer.',
+    ph:[5.5,7.0], cold:8, drought:9, shade:4, wet:2, lowN:9,
+    tags:['Drought warrior','Native','Pollinator hub'],
+    mpct:5, mow:'2–3×/yr at 4"', season:'Apr–May or Aug–Sep',
+    sources:['USDA PLANTS DB: Achillea millefolium pH 5.5–7.0, drought-adapted native','RHS: one of the most drought-resistant lawn alternatives','Cornell Ext: recommended for dry sunny slopes as mow-tolerant wildflower'] },
+
+  { id:'lq',  name:'Self-Heal',         icon:'💜', type:'Native wildflower',
+    desc:'Prunella vulgaris — native mow-tolerant wildflower that lies flat under cutting. Purple flower spikes Jun–Oct attract bumblebees. Wide pH range. Moderate traffic tolerance.',
+    ph:[5.5,7.5], cold:8, drought:6, shade:7, wet:5, lowN:7,
+    tags:['Mow tolerant','Purple blooms','Native bee plant'],
+    mpct:5, mow:'3–4×/yr at 3.5"', season:'Apr–May or Aug–Sep',
+    sources:['USDA PLANTS DB: Prunella vulgaris pH 5.5–7.5, wide adaptability','RHS: rosette form persists under regular cutting','Cornell Ext: native wildflower compatible with fescue mixes'] },
+
+  { id:'ox',  name:'Wood Sorrel',       icon:'🟡', type:'Shade groundcover',
+    desc:'Heart-shaped leaves, small yellow flowers. Thrives in partial–full shade on thin poor soils where grasses struggle. Edible. Gentle spreader.',
+    ph:[5.5,7.0], cold:7, drought:5, shade:9, wet:4, lowN:6,
+    tags:['Shade tolerant','Edible','Gentle spreader'],
+    mpct:5, mow:'0–2×/yr', season:'Apr–May',
+    sources:['USDA PLANTS DB: Oxalis acetosella pH 5.5–7.0, shade-adapted woodland species','RHS: good groundcover for dry shade under trees','Cornell Ext: naturalistic alternative for deep shade patches'] },
+
+  { id:'vm',  name:'Common Violet',     icon:'🔵', type:'Native wildflower',
+    desc:'Viola sororia — native spring bloomer, purple flowers before mowing season. Host plant for Great Spangled Fritillary. Thrives in moist shaded lawns.',
+    ph:[5.5,7.0], cold:9, drought:4, shade:8, wet:6, lowN:6,
+    tags:['Spring bloomer','Butterfly host','Shade loving'],
+    mpct:5, mow:'Mow after bloom in May', season:'Sep (naturalistic)',
+    sources:['USDA PLANTS DB: Viola sororia pH 5.5–7.0, moist shaded woodland edges','RHS: tolerates light foot traffic, self-seeds gently','Cornell Ext: early-season nectar source, host for fritillary butterflies'] },
+
+  { id:'bm',  name:'Birdsfoot Trefoil', icon:'🌺', type:'Legume',
+    desc:'Yellow-flowered N-fixing legume. More drought-tolerant than white clover. Excellent on poor dry slopes and compacted soils. Conservation seeding staple.',
+    ph:[6.0,7.5], cold:8, drought:7, shade:4, wet:4, lowN:10,
+    tags:['N-fixer','Slope stabiliser','Drought tolerant'],
+    mpct:8, mow:'2–3×/yr at 3.5"', season:'Apr–May or Aug',
+    sources:['USDA PLANTS DB: Lotus corniculatus pH 6.0–7.5, drought-tolerant legume','Christians et al.: better than T. repens for difficult low-fertility dry sites','Penn State Ext: recommended N-fixer for drier less fertile soils'] },
+
+  { id:'ms',  name:'Feather Moss',      icon:'🟢', type:'Moss',
+    desc:'Native feather and cushion mosses (Ptilium, Pleurozium). Velvety carpet for acidic moist shaded conditions. Zero mowing, zero fertiliser, zero irrigation. pH-limited to acidic sites.',
+    ph:[4.5,6.0], cold:10, drought:1, shade:10, wet:8, lowN:10,
+    tags:['Zero maintenance','Acid specialist','Deep shade'],
+    mpct:20, mow:'Never', season:'Year-round transplant',
+    sources:['USDA PLANTS DB: Ptilium crista-castrensis pH 4.5–5.5 optimum','RHS: ideal for acid woodland gardens, zero maintenance once established','Cornell Ext: only for acidic permanently moist heavily shaded sites'] },
+
+  { id:'bg',  name:'Blue-eyed Grass',   icon:'🔮', type:'Native wildflower',
+    desc:'Sisyrinchium angustifolium — looks like a fine grass but produces blue-violet flowers in late spring. Native iris-family perennial. Tolerates mowing after flowering.',
+    ph:[5.5,7.0], cold:8, drought:6, shade:5, wet:5, lowN:7,
+    tags:['Native','Spring bloomer','Grass-like'],
+    mpct:3, mow:'Mow after bloom in Jun', season:'Apr–May',
+    sources:['USDA PLANTS DB: Sisyrinchium angustifolium pH 5.5–7.0','RHS: tolerates moderately dry to moist soils','Cornell Ext: native perennial for naturalistic lawn areas'] },
+
+  { id:'ec',  name:'English Daisy',     icon:'🌸', type:'Wildflower',
+    desc:'Bellis perennis — low rosette wildflower with white/pink ray flowers. Self-seeding and mow-tolerant. Classic in European meadow lawns.',
+    ph:[5.5,7.0], cold:8, drought:5, shade:5, wet:5, lowN:6,
+    tags:['Self-seeding','Mow tolerant','Spring display'],
+    mpct:3, mow:'3–4×/yr', season:'Sep or early Apr',
+    sources:['USDA PLANTS DB: Bellis perennis pH 5.5–7.0','RHS: classic lawn daisy, thrives under moderate mowing','Penn State Ext: persistent in managed lawns, good biodiversity value'] },
+
+  { id:'cm',  name:'Roman Chamomile',   icon:'🌼', type:'Aromatic herb',
+    desc:'Apple-scented feathery herb forming a dense fragrant mat under mowing. Excellent for hot dry sandy slopes. Very drought-hardy on well-drained soils.',
+    ph:[5.5,7.5], cold:6, drought:8, shade:3, wet:2, lowN:8,
+    tags:['Apple scent','Drought hardy','Sunny slopes'],
+    mpct:3, mow:'2–3×/yr (optional)', season:'Apr–Jun',
+    sources:['RHS: Chamaemelum nobile pH 5.5–7.5, full sun, drought-adapted','USDA PLANTS DB: well-drained soils essential, cold sensitivity below zone 6','Penn State Ext: fragrant mow-tolerant herb for dry exposed lawns'] },
+];
+
+// ── SI WEIGHTS ─────────────────────────────────────────────────────
+var VARS = [
+  { key:'ph',      label:'pH match',       w:0.25 },
+  { key:'cold',    label:'Cold hardiness', w:0.20 },
+  { key:'drought', label:'Drought adapt.', w:0.20 },
+  { key:'shade',   label:'Shade match',    w:0.15 },
+  { key:'wet',     label:'Drainage match', w:0.10 },
+  { key:'lowN',    label:'Low-N adapt.',   w:0.10 },
+];
+
+// ── SOIL PROPERTY CONFIG ───────────────────────────────────────────
+var SOIL_PROPS = [
+  {key:'phh2o',label:'pH',          unit:'',       d:10,  max:10},
+  {key:'soc',  label:'Org Carbon',  unit:'g/kg',   d:10,  max:60},
+  {key:'clay', label:'Clay',        unit:'%',      d:10,  max:80},
+  {key:'sand', label:'Sand',        unit:'%',      d:10,  max:100},
+  {key:'silt', label:'Silt',        unit:'%',      d:10,  max:80},
+  {key:'bdod', label:'Bulk Density',unit:'kg/dm³', d:100, max:2.0},
+  {key:'cec',  label:'CEC',         unit:'mmol/kg',d:10,  max:400},
+];
+var DEPTHS = ['0-5cm','5-15cm','15-30cm','30-60cm'];
+
+// ══════════════════════════════════════════════════════════════════
+// API CALLS
+// ══════════════════════════════════════════════════════════════════
+
+// 1. Geocode ────────────────────────────────────────────────────────
+async function geocode(addr) {
+  var r = await fetch('https://photon.komoot.io/api/?q='+encodeURIComponent(addr)+'&limit=1&lang=en');
+  var d = await r.json();
+  if (!d.features || !d.features.length) return null;
+  var f=d.features[0], p=f.properties;
+  return { lat:f.geometry.coordinates[1], lon:f.geometry.coordinates[0],
+           name:[p.name,p.city||p.county,p.state,p.country].filter(Boolean).join(', ') };
+}
+
+// 2. Soil — SoilGrids with spiral fallback ──────────────────────────
+async function soilAt(lat,lon) {
+  var pp = SOIL_PROPS.map(function(p){return 'property='+p.key;}).join('&');
+  var dd = DEPTHS.map(function(d){return 'depth='+d;}).join('&');
+  try {
+    var r = await fetch('https://rest.isric.org/soilgrids/v2.0/properties/query?lon='+lon+'&lat='+lat+'&'+pp+'&'+dd+'&value=mean');
+    if (!r.ok) return null;
+    var j = await r.json();
+    var layers = j&&j.properties&&j.properties.layers;
+    if (!layers) return null;
+    var ok = layers.some(function(l){ return l.depths&&l.depths.some(function(d){ return d.values&&d.values.mean!=null; }); });
+    return ok ? j : null;
+  } catch(e) { return null; }
+}
+
+async function fetchSoil(lat,lon) {
+  var r = await soilAt(lat,lon);
+  if (r) return {json:r, offsetM:0};
+  var offs=[250,500,750,1000], dirs=[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]];
+  var mLa=111000, mLo=111000*Math.cos(lat*Math.PI/180);
+  for (var oi=0;oi<offs.length;oi++)
+    for (var di=0;di<dirs.length;di++) {
+      var r2=await soilAt(lat+dirs[di][0]*offs[oi]/mLa, lon+dirs[di][1]*offs[oi]/mLo);
+      if (r2) return {json:r2, offsetM:offs[oi]};
+    }
+  return null;
+}
+
+function parseSoil(json) {
+  var out={};
+  (json.properties.layers||[]).forEach(function(layer) {
+    var prop=SOIL_PROPS.find(function(p){return p.key===layer.name;});
+    if (!prop) return;
+    out[layer.name]={};
+    layer.depths.forEach(function(d) {
+      var raw=d.values&&d.values.mean;
+      out[layer.name][d.label] = raw!=null ? raw/prop.d : null;
+    });
+  });
+  return out;
+}
+
+function textureClass(sand,silt,clay) {
+  if (clay==null||sand==null) return 'Loam';
+  if (clay>=40) return 'Clay';
+  if (clay>=27&&silt>=28) return 'Clay loam';
+  if (clay>=27&&sand<=20) return 'Silty clay loam';
+  if (clay>=20&&sand>=45) return 'Sandy clay loam';
+  if (silt>=75&&clay<12)  return 'Silt loam';
+  if (sand>=85)           return 'Sand';
+  if (sand>=70&&clay<15)  return 'Sandy loam';
+  return 'Loam';
+}
+
+// 3. Climate — Open-Meteo Archive ERA5 (THE FIX) ────────────────────
+// Previous bug: used climate-api.open-meteo.com with 'monthly' param
+//   which doesn't exist → empty response → "no data"
+// Fix: use archive-api.open-meteo.com with daily data 2010–2020,
+//   aggregate to monthly means in JS ourselves.
+async function fetchClimate(lat,lon) {
+  // Request daily data for a 10-year period — ERA5 archive endpoint
+  // This endpoint is well-established, free, open CORS, no key needed
+  var url = 'https://archive-api.open-meteo.com/v1/archive'
+    + '?latitude='  + lat.toFixed(4)
+    + '&longitude=' + lon.toFixed(4)
+    + '&start_date=2010-01-01'
+    + '&end_date=2020-12-31'
+    + '&daily=temperature_2m_min,temperature_2m_max,precipitation_sum,et0_fao_evapotranspiration'
+    + '&timezone=auto';
+  var resp = await fetch(url);
+  if (!resp.ok) throw new Error('Climate API returned HTTP ' + resp.status);
+  var json = await resp.json();
+  if (!json.daily || !json.daily.time) throw new Error('Climate API returned no daily data');
+  return json;
+}
+
+function parseClimate(json) {
+  var d = json.daily;
+  // Aggregate daily → monthly means grouped by calendar month (0=Jan..11=Dec)
+  var byM = Array.from({length:12}, function(){ return {tmin:[],tmax:[],precip:[],et0:[]}; });
+  d.time.forEach(function(t,i) {
+    var m = parseInt(t.split('-')[1]) - 1;
+    if (d.temperature_2m_min[i]         != null) byM[m].tmin.push(d.temperature_2m_min[i]);
+    if (d.temperature_2m_max[i]         != null) byM[m].tmax.push(d.temperature_2m_max[i]);
+    if (d.precipitation_sum[i]          != null) byM[m].precip.push(d.precipitation_sum[i]);
+    if (d.et0_fao_evapotranspiration[i] != null) byM[m].et0.push(d.et0_fao_evapotranspiration[i]);
+  });
+  function avg(a) { return a.length ? a.reduce(function(s,v){return s+v;},0)/a.length : null; }
+  function cF(c)  { return c!=null ? c*9/5+32 : null; }
+
+  // Monthly means
+  var mPrecip = byM.map(function(m){ return (avg(m.precip)||0)*30.44; }); // daily avg × days/mo → mm/mo
+  var mTmaxF  = byM.map(function(m){ return cF(avg(m.tmax)); });
+  var mTminF  = byM.map(function(m){ return cF(avg(m.tmin)); });
+  var mEt0    = byM.map(function(m){ return (avg(m.et0)||0)*30.44; });
+
+  var annPrecipIn = mPrecip.reduce(function(s,v){return s+v;},0) / 25.4;
+  var janLowF  = mTminF[0];
+  var julHighF = mTmaxF[6];
+
+  // USDA zone from Jan avg low °F
+  var zone = '?';
+  if (janLowF!=null) zone = janLowF<-20?'3a':janLowF<-15?'3b':janLowF<-10?'4a':janLowF<-5?'4b':
+    janLowF<0?'5a':janLowF<5?'5b':janLowF<10?'6a':janLowF<15?'6b':janLowF<20?'7a':janLowF<25?'7b':'8a+';
+
+  // Growing months (avg high > 50°F)
+  var growMo = mTmaxF.filter(function(v){ return v!=null&&v>50; }).length;
+
+  // Dry weeks (May–Sep, months 4–8): where monthly ET0 > monthly precip
+  var dryWks = 0;
+  for (var mi=4; mi<=8; mi++) {
+    var p=mPrecip[mi], e=mEt0[mi];
+    if (e > p*1.1) dryWks += 4;
+    else if (e > p*0.85) dryWks += 2;
+  }
+  dryWks = Math.min(dryWks, 14);
+
+  return {
+    zone, annPrecipIn, janLowF, julHighF, growMo, dryWks,
+    sumPrecipIn: (mPrecip[5]+mPrecip[6]+mPrecip[7])/3/25.4,
+    mPrecipIn:   mPrecip.map(function(v){return v/25.4;}),
+    mTmaxF, mTminF,
+  };
+}
+
+// ══════════════════════════════════════════════════════════════════
+// SUITABILITY INDEX ENGINE
+// SI(plant,site) = Σ wᵢ × scoreᵢ  where Σwᵢ = 1 → SI ∈ [0,1]
+//
+// Scoring:
+//  pH:      bell-curve: 1.0 inside optimum, 0.82/0.55/0.10 outside
+//  cold:    plant_tolerance × (0.35 + coldDemand×0.65)
+//           coldDemand = how cold the Jan low is (more cold = more demand)
+//  drought: plant_tolerance × (0.30 + droughtDemand×0.70)
+//           droughtDemand = dry_weeks / 12
+//  shade:   full sun → neutral 0.5 baseline; shaded → tolerance-weighted
+//           sun-only plants (shade≤3) penalised 0.5× on shaded sites
+//  wet:     clay% proxy for drainage; drought-intolerant plants on clay penalised
+//  lowN:    CEC proxy for fertility; legumes (lowN=10) always score well
+// ══════════════════════════════════════════════════════════════════
+function computeSI(plant, soil0, climate, shadePct) {
+  var ex = {};
+
+  // pH
+  var sitePh = soil0&&soil0.phh2o&&soil0.phh2o['0-5cm'];
+  var phScore, phNote;
+  if (sitePh!=null) {
+    var lo=plant.ph[0], hi=plant.ph[1];
+    if      (sitePh<lo-1.0){ phScore=0.10; phNote='pH '+sitePh.toFixed(1)+' is far below the '+lo+'–'+hi+' optimum. Soil too acid — major growth reduction.'; }
+    else if (sitePh<lo-0.3){ phScore=0.55; phNote='pH '+sitePh.toFixed(1)+' is moderately below the '+lo+'–'+hi+' optimum. Suboptimal but possible.'; }
+    else if (sitePh<lo)    { phScore=0.82; phNote='pH '+sitePh.toFixed(1)+' is slightly below the '+lo+'–'+hi+' optimum. Minor impact.'; }
+    else if (sitePh>hi+1.0){ phScore=0.10; phNote='pH '+sitePh.toFixed(1)+' is far above the '+lo+'–'+hi+' optimum. Soil too alkaline — nutrient lockup.'; }
+    else if (sitePh>hi+0.3){ phScore=0.55; phNote='pH '+sitePh.toFixed(1)+' is moderately above the '+lo+'–'+hi+' optimum.'; }
+    else if (sitePh>hi)    { phScore=0.82; phNote='pH '+sitePh.toFixed(1)+' is slightly above the '+lo+'–'+hi+' optimum. Minor impact.'; }
+    else                   { phScore=1.00; phNote='pH '+sitePh.toFixed(1)+' is squarely within the '+lo+'–'+hi+' optimum. No pH penalty.'; }
+  } else { phScore=0.75; phNote='No pH data — neutral score applied.'; }
+  ex.ph = {score:phScore, site:sitePh!=null?'pH '+sitePh.toFixed(1):'no data', plant:'opt '+plant.ph[0]+'–'+plant.ph[1], note:phNote};
+
+  // Cold
+  var janLow = climate&&climate.janLowF;
+  var coldDemand = janLow!=null ? Math.max(0,Math.min(1,(25-janLow)/40)) : 0.5;
+  var coldScore  = (plant.cold/10)*(0.35+coldDemand*0.65);
+  ex.cold = {score:coldScore, site:janLow!=null?janLow.toFixed(1)+'°F Jan low':'no data',
+             plant:'cold '+plant.cold+'/10',
+             note:'Jan average low is '+( janLow!=null?janLow.toFixed(1)+'°F':'unknown')+'. Cold stress demand: '+(coldDemand*100).toFixed(0)+'%. Species cold tolerance: '+plant.cold+'/10.'};
+
+  // Drought
+  var dryWks = climate&&climate.dryWks!=null ? climate.dryWks : 4;
+  var drDemand  = Math.min(1,dryWks/12);
+  var drScore   = (plant.drought/10)*(0.30+drDemand*0.70);
+  ex.drought = {score:drScore, site:dryWks+' dry weeks/summer',
+                plant:'drought '+plant.drought+'/10',
+                note:'Estimated '+dryWks+' weeks where evaporation exceeds rainfall. Drought demand: '+(drDemand*100).toFixed(0)+'%. Species drought score: '+plant.drought+'/10.'};
+
+  // Shade
+  var shadeFrac = Math.min(1,(shadePct||0)/100);
+  var shadeScore;
+  if (shadeFrac < 0.1) {
+    shadeScore = 0.5; // full sun — shade tolerance irrelevant
+  } else {
+    shadeScore = (plant.shade/10)*(0.20+shadeFrac*0.80);
+    if (plant.shade<=3&&shadeFrac>0.4) shadeScore *= 0.5; // hard penalty for sun-only plants in shade
+  }
+  ex.shade = {score:shadeScore, site:shadePct+'% shade',
+              plant:'shade '+plant.shade+'/10',
+              note:shadePct>0 ? 'Site is '+shadePct+'% shaded. Shade demand: '+(shadeFrac*100).toFixed(0)+'%. Species shade tolerance: '+plant.shade+'/10.'
+                              : 'Full sun assumed (0% shade input). Shade tolerance is neutral — not a differentiator.'};
+
+  // Wet / drainage (clay% proxy)
+  var clay = soil0&&soil0.clay&&soil0.clay['0-5cm'];
+  var wetDemand = clay!=null ? Math.min(1,Math.max(0,(clay-10)/50)) : 0.3;
+  var wetScore  = (plant.wet/10)*(0.25+wetDemand*0.75);
+  if (plant.wet<=2&&wetDemand>0.5) wetScore*=0.4; // penalise sharp-drainage plants on heavy clay
+  ex.wet = {score:wetScore, site:clay!=null?clay.toFixed(0)+'% clay':'no data',
+            plant:'wet '+plant.wet+'/10',
+            note:'Clay content '+( clay!=null?clay.toFixed(0)+'%':'unknown')+' used as drainage proxy. Wet demand: '+(wetDemand*100).toFixed(0)+'%.'
+              +(plant.wet<=2&&wetDemand>0.5?' This species needs sharp drainage — penalised on clay-rich soil.':'')};
+
+  // Low-N (CEC proxy)
+  var cec = soil0&&soil0.cec&&soil0.cec['0-5cm'];
+  var lowNDemand = cec!=null ? Math.max(0,Math.min(1,(200-cec)/200)) : 0.5;
+  var lowNScore  = (plant.lowN/10)*(0.25+lowNDemand*0.75);
+  ex.lowN = {score:lowNScore, site:cec!=null?cec.toFixed(0)+' mmol/kg CEC':'no data',
+             plant:'lowN '+plant.lowN+'/10',
+             note:'CEC '+( cec!=null?cec.toFixed(0)+' mmol/kg':'unknown')+' used as fertility proxy. Low-N demand: '+(lowNDemand*100).toFixed(0)+'%.'
+               +(plant.lowN>=9?' Legume — fixes atmospheric nitrogen regardless of soil fertility.':'')};
+
+  var si = ex.ph.score*0.25 + ex.cold.score*0.20 + ex.drought.score*0.20
+         + ex.shade.score*0.15 + ex.wet.score*0.10 + ex.lowN.score*0.10;
+
+  return {plant, si:Math.max(0,Math.min(1,si)), ex};
+}
+
+// ══════════════════════════════════════════════════════════════════
+// RENDER HELPERS
+// ══════════════════════════════════════════════════════════════════
+function pct(v,max) { return Math.min(100,Math.round((v||0)/max*100)); }
+function fmt(v,dp)  { return v!=null ? v.toFixed(dp) : '—'; }
+
+function scoreColor(s) {
+  return s>=0.70 ? 'score-green' : s>=0.45 ? 'score-orange' : 'score-red';
+}
+function scoreColorHex(s) {
+  return s>=0.70 ? 'var(--green)' : s>=0.45 ? 'var(--orange)' : 'var(--red)';
+}
+
+function toggleSec(id) {
+  var body = document.getElementById(id+'-body');
+  var tog  = document.getElementById(id+'-tog');
+  if (!body||!tog) return;
+  var isOpen = !body.classList.contains('closed');
+  body.classList.toggle('closed', isOpen);
+  tog.textContent = isOpen ? '▼ Show' : '▲ Hide';
+}
+
+function openSec(id) {
+  var body = document.getElementById(id+'-body');
+  var tog  = document.getElementById(id+'-tog');
+  if (!body||!tog) return;
+  body.classList.remove('closed');
+  tog.textContent = '▲ Hide';
+}
+
+// ── Recommendations ───────────────────────────────────────────────
+function renderRec(top5, mix) {
+  var ph    = soilData&&soilData.phh2o&&soilData.phh2o['0-5cm'];
+  var zone  = climateData ? climateData.zone : '?';
+  document.getElementById('rec-intro').innerHTML =
+    '<strong>'+PLANTS.length+' species evaluated</strong> for '+geoData.name+
+    ' — zone '+zone+
+    (ph!=null ? ', soil pH '+ph.toFixed(1) : '')+
+    ', '+shadeInput+'% shade. '+
+    'Top 5 shown below ranked by Suitability Index (SI).';
+
+  var COLORS = ['#2d7a4f','#5aab7c','#2563a8','#c25a00','#7c3aed'];
+  var html='';
+  top5.forEach(function(r,i) {
+    var si100 = Math.round(r.si*100);
+    var tagHtml = (r.plant.tags||[]).map(function(t){return '<span class="rec-tag">'+t+'</span>';}).join('');
+    // best and worst variable for the why note
+    var exArr = VARS.map(function(v){ return {v:v, s:r.ex[v.key].score}; });
+    exArr.sort(function(a,b){return b.s-a.s;});
+    var best = exArr[0], worst = exArr[exArr.length-1];
+    var why = best.v.label+': '+r.ex[best.v.key].note.split('.')[0]+'.';
+
+    html += '<div class="rec-card'+(i===0?' top1':'')+'" onclick="openAndScroll(\''+r.plant.id+'\')">'
+      + '<div class="rec-rank">#'+(i+1)+'</div>'
+      + '<div class="rec-icon">'+r.plant.icon+'</div>'
+      + '<div class="rec-name">'+r.plant.name+'</div>'
+      + '<div class="rec-type">'+r.plant.type+'</div>'
+      + '<div class="rec-tags">'+tagHtml+'</div>'
+      + '<div class="rec-si">'+si100+'</div>'
+      + '<div class="rec-si-lbl">SI score / 100 &nbsp;·&nbsp; '+mix[i].pct+'% of mix</div>'
+      + '<div class="rec-bar-wrap"><div class="rec-bar" style="width:'+si100+'%;background:'+COLORS[i]+'"></div></div>'
+      + '<div class="rec-why">'+why+'</div>'
+      + '</div>';
+  });
+  document.getElementById('rec-grid').innerHTML = html;
+  document.getElementById('rec-sub-head').textContent =
+    'Top 5 of '+PLANTS.length+' species · zone '+(climateData?climateData.zone:'?')+
+    (soilData&&soilData.phh2o&&soilData.phh2o['0-5cm']!=null?' · soil pH '+soilData.phh2o['0-5cm'].toFixed(1):'');
+}
+
+// ── Mix bar ───────────────────────────────────────────────────────
+function renderMix(mix) {
+  var COLORS = ['#2d7a4f','#5aab7c','#2563a8','#c25a00','#7c3aed'];
+  var barHtml='<div class="mix-bar-wrap">';
+  var legHtml='';
+  mix.forEach(function(m,i) {
+    barHtml += '<div class="mix-bar-seg" style="flex:'+m.pct+';background:'+COLORS[i]+'">'
+      +(m.pct>8?m.pct+'%':'')+'</div>';
+    legHtml += '<span><span class="mix-dot" style="background:'+COLORS[i]+'"></span>'+m.plant.name+' ('+m.pct+'%)</span>';
+  });
+  barHtml += '</div>';
+  document.getElementById('mix-bar-div').innerHTML = barHtml;
+  document.getElementById('mix-legend-div').innerHTML = legHtml;
+
+  // Seeding rate reference table
+  var SEED_RATES = {ff:4,tf:8,pr:6,rb:2,dw:0.5,mc:0.3,ct:0.15,sw:0.8,
+                   ya:0.1,lq:0.2,ox:0.3,vm:0.5,bm:0.4,ms:0.5,bg:0.3,ec:0.2,cm:0.15};
+  var rateHtml = '<table style="width:100%;border-collapse:collapse;font-size:13px">'
+    +'<thead><tr style="border-bottom:2px solid var(--border)">'
+    +'<th style="text-align:left;padding:7px 10px;font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;background:var(--bg)">Species</th>'
+    +'<th style="text-align:center;padding:7px 10px;font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;background:var(--bg)">Mix %</th>'
+    +'<th style="text-align:center;padding:7px 10px;font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;background:var(--bg)">oz / 1,000 sqft</th>'
+    +'<th style="text-align:left;padding:7px 10px;font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;background:var(--bg)">Mow schedule</th>'
+    +'<th style="text-align:left;padding:7px 10px;font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;background:var(--bg)">Seed window</th>'
+    +'</tr></thead><tbody>';
+  mix.forEach(function(m, i) {
+    var rate = SEED_RATES[m.plant.id] || '—';
+    rateHtml += '<tr style="border-bottom:1px solid #f0f0f0;background:'+(i%2===0?'var(--white)':'var(--bg)')+'">'
+      +'<td style="padding:8px 10px;font-weight:600">'+m.plant.icon+' '+m.plant.name+'</td>'
+      +'<td style="padding:8px 10px;text-align:center">'
+        +'<div style="display:inline-flex;align-items:center;gap:8px">'
+        +'<div style="width:'+m.pct+'px;max-width:64px;height:5px;border-radius:3px;background:'+COLORS[i]+';flex-shrink:0"></div>'
+        +'<span style="font-weight:600">'+m.pct+'%</span></div></td>'
+      +'<td style="padding:8px 10px;text-align:center;font-weight:700;color:var(--green)">'+rate+'</td>'
+      +'<td style="padding:8px 10px;font-size:12px;color:var(--muted)">'+m.plant.mow+'</td>'
+      +'<td style="padding:8px 10px;font-size:12px;color:var(--muted)">'+m.plant.season+'</td>'
+      +'</tr>';
+  });
+  rateHtml += '</tbody></table>';
+  var rtEl = document.getElementById('mix-rate-table');
+  if (rtEl) rtEl.innerHTML = rateHtml;
+}
+
+// ── Calendar ──────────────────────────────────────────────────────
+function renderCal(zone, top5) {
+  var z = parseInt(zone)||6;
+  var events = [
+    {w:z<=5?'Late Aug':'Early Sep', t:'Primary seeding window. Soil temperature 50–65°F, fall rains likely. Broadcast your mix at the recommended rate.'},
+    {w:'First 2 weeks',             t:'Water lightly every day — keep seedbed moist but not saturated. After 14 days, stop irrigating and let roots establish.'},
+    {w:'Oct',                       t:'First mow when grass reaches 5". Set blade to 3.5". Remove clippings from first cut only.'},
+    {w:'Oct–Nov',                   t:'Leave at 4" height going into winter. Mulch fallen leaves in place — free organic matter.'},
+    {w:'Mar–Apr',                   t:'Overseed bare patches with leftover mix. Do not mow until all new growth reaches 4".'},
+    {w:'May',                       t:'Clover and wildflowers begin flowering. Delay first spring mow until late May to protect pollinators.'},
+    {w:'Jun–Aug',                   t:'Mow 1–2× total through summer at 3.5–4". Clover, thyme and low-growers maintain height naturally.'},
+    {w:'Sep (year 2+)',             t:'Annual overseeding window. Light top-dress of same mix on any thin or bare spots.'},
+  ];
+  if (top5.some(function(r){return r.plant.id==='ms';}))
+    events.push({w:'Year-round', t:'Moss areas: keep consistently moist through first season. Never lime or fertilise moss zones.'});
+
+  document.getElementById('cal-body').innerHTML = events.map(function(ev){
+    return '<div class="cal-row"><div class="cal-when">'+ev.w+'</div><div class="cal-what">'+ev.t+'</div></div>';
+  }).join('');
+}
+
+// ── SI Table ──────────────────────────────────────────────────────
+function renderSI(results, top5ids) {
+  // Site summary
+  var ph   = soilData&&soilData.phh2o&&soilData.phh2o['0-5cm'];
+  var clay = soilData&&soilData.clay&&soilData.clay['0-5cm'];
+  var cec  = soilData&&soilData.cec&&soilData.cec['0-5cm'];
+  document.getElementById('si-meta').innerHTML =
+    'Site inputs: &nbsp;'
+    +'<strong>pH '+(ph!=null?ph.toFixed(1):'no data')+'</strong> &nbsp;·&nbsp; '
+    +'<strong>clay '+(clay!=null?clay.toFixed(0)+'%':'no data')+'</strong> &nbsp;·&nbsp; '
+    +'<strong>CEC '+(cec!=null?cec.toFixed(0)+' mmol/kg':'no data')+'</strong> &nbsp;·&nbsp; '
+    +'<strong>zone '+(climateData?climateData.zone:'?')+'</strong> &nbsp;·&nbsp; '
+    +'<strong>shade '+shadeInput+'%</strong><br>'
+    +'SI = (pH×0.25) + (Cold×0.20) + (Drought×0.20) + (Shade×0.15) + (Wet×0.10) + (LowN×0.10) &nbsp;·&nbsp; all scores 0–10';
+
+  var html='';
+  results.forEach(function(r) {
+    var sel   = top5ids.indexOf(r.plant.id)>=0;
+    var si100 = Math.round(r.si*100);
+    function vCell(k) {
+      var s=r.ex[k].score, disp=Math.round(s*10);
+      return '<td class="var-pip '+scoreColor(s)+'" style="text-align:center" title="'+r.ex[k].note+'">'+disp+'</td>';
+    }
+    html += '<tr class="'+(sel?'sel-row':'')+'" onclick="toggleExplain(\''+r.plant.id+'\')" style="cursor:pointer">'
+      +'<td class="plant-cell">'+r.plant.icon+' '+r.plant.name+(sel?'<span class="sel-badge">✓ selected</span>':'')+'</td>'
+      +'<td class="type-cell">'+r.plant.type+'</td>'
+      +vCell('ph')+vCell('cold')+vCell('drought')+vCell('shade')+vCell('wet')+vCell('lowN')
+      +'<td class="score-cell '+scoreColor(r.si)+'" style="white-space:nowrap">'+si100+'<div style="width:'+Math.min(si100,90)+'px;height:3px;border-radius:2px;margin-top:4px;background:'+scoreColorHex(r.si)+'"></div></td>'
+      +'</tr>';
+
+    // Explain panel
+    html += '<tr><td colspan="9" style="padding:0">'
+      +'<div class="explain-panel" id="ex-'+r.plant.id+'">'
+      +'<p class="explain-desc">'+r.plant.icon+' <strong>'+r.plant.name+'</strong> &nbsp;·&nbsp; <em>'+r.plant.type+'</em><br>'+r.plant.desc+'</p>'
+      +'<div class="explain-grid">';
+
+    VARS.forEach(function(vr) {
+      var ex=r.ex[vr.key], s=ex.score, col=scoreColorHex(s);
+      html += '<div class="ev-card">'
+        +'<div class="ev-label">'+vr.label+' (weight '+vr.w+')</div>'
+        +'<div class="ev-value" style="color:'+col+'">'+Math.round(s*10)+'/10</div>'
+        +'<div class="ev-note"><strong>Site:</strong> '+ex.site+'<br><strong>Plant optimum:</strong> '+ex.plant+'<br>'+ex.note+'</div>'
+        +'<div class="ev-bar-wrap"><div class="ev-bar" style="width:'+Math.round(s*100)+'%;background:'+col+'"></div></div>'
+        +'</div>';
+    });
+
+    html += '</div>'
+      +'<div class="explain-sources">'+'<strong>How do we know '+r.plant.name+"'s tolerances?</strong> "+'Each score comes from peer-reviewed turfgrass literature and USDA field data — not estimates. '+'The pH optimum, for example, is the range where the species shows optimal germination and growth in documented trials. '+'Sources for this species:<br>'
+      +' The pH optimum, cold hardiness, drought tolerance and other values come from:'
+      +'<br>'+r.plant.sources.map(function(s){return '→ '+s;}).join('<br>')+'</div>'
+      +'</div></td></tr>';
+  });
+  document.getElementById('si-tbody').innerHTML = html;
+}
+
+function toggleExplain(id) {
+  var el = document.getElementById('ex-'+id);
+  if (el) el.classList.toggle('open');
+}
+
+function openAndScroll(id) {
+  openSec('si');
+  var ex = document.getElementById('ex-'+id);
+  if (ex) { ex.classList.add('open'); setTimeout(function(){ ex.scrollIntoView({behavior:'smooth',block:'center'}); },250); }
+}
+
+// ── Soil cards ────────────────────────────────────────────────────
+function renderSoilDepth(depth) {
+  document.querySelectorAll('.depth-tab').forEach(function(t){ t.classList.toggle('active',t.dataset.depth===depth); });
+  if (!soilData) return;
+  var html='';
+  SOIL_PROPS.forEach(function(p) {
+    var val=soilData[p.key]&&soilData[p.key][depth];
+    var valStr=val!=null?val.toFixed(p.d>=100?2:1):null;
+    html+='<div class="data-card"><div class="dc-label">'+p.label+'</div>'
+      +(valStr!=null
+        ?'<div class="dc-value">'+valStr+'<span class="dc-unit">'+p.unit+'</span></div>'
+        +'<div class="dc-bar-wrap"><div class="dc-bar" style="width:'+pct(val,p.max)+'%"></div></div>'
+        :'<div style="color:var(--muted);font-size:13px;font-style:italic">no data</div>')
+      +'</div>';
+  });
+  var sand=soilData.sand&&soilData.sand[depth], silt=soilData.silt&&soilData.silt[depth], clay=soilData.clay&&soilData.clay[depth];
+  if (sand!=null&&silt!=null&&clay!=null) {
+    html+='<div class="data-card wide"><div class="dc-label">Texture class</div>'
+      +'<div class="dc-value" style="font-size:16px">'+textureClass(sand,silt,clay)+'</div>'
+      +'<div class="tex-row">'
+      +'<div class="tex-item"><div class="tex-lbl">Sand '+sand.toFixed(0)+'%</div><div class="tex-wrap"><div class="tex-fill" style="width:'+Math.round(sand)+'%;background:#c8a96e"></div></div></div>'
+      +'<div class="tex-item"><div class="tex-lbl">Silt '+silt.toFixed(0)+'%</div><div class="tex-wrap"><div class="tex-fill" style="width:'+Math.round(silt)+'%;background:#8ab88a"></div></div></div>'
+      +'<div class="tex-item"><div class="tex-lbl">Clay '+clay.toFixed(0)+'%</div><div class="tex-wrap"><div class="tex-fill" style="width:'+Math.round(clay)+'%;background:#b07070"></div></div></div>'
+      +'</div></div>';
+  }
+  document.getElementById('soil-grid').innerHTML=html;
+}
+
+// ── Climate cards ─────────────────────────────────────────────────
+function renderClimate(c) {
+  var ML=['J','F','M','A','M','J','J','A','S','O','N','D'];
+  function cCard(lbl,val,unit,desc,barPct){
+    return '<div class="data-card"><div class="dc-label">'+lbl+'</div>'
+      +'<div class="dc-value">'+val+'<span class="dc-unit">'+unit+'</span></div>'
+      +'<div class="dc-desc">'+desc+'</div>'
+      +(barPct!=null?'<div class="dc-bar-wrap"><div class="dc-bar" style="width:'+barPct+'%"></div></div>':'')
+      +'</div>';
+  }
+  var maxP=Math.max.apply(null,c.mPrecipIn), maxT=Math.max.apply(null,c.mTmaxF.filter(Boolean));
+  var pSpark='<div class="sparkline">',tSpark='<div class="sparkline">';
+  c.mPrecipIn.forEach(function(v,i){ var h=maxP>0?Math.round(v/maxP*34):0;
+    pSpark+='<div class="spark-col"><div class="spark-bar" style="height:'+h+'px;background:var(--blue)"></div><div class="spark-lbl">'+ML[i]+'</div></div>'; });
+  c.mTmaxF.forEach(function(v,i){ var h=maxT>0?Math.round((v||0)/maxT*34):0;
+    tSpark+='<div class="spark-col"><div class="spark-bar" style="height:'+h+'px;background:var(--orange)"></div><div class="spark-lbl">'+ML[i]+'</div></div>'; });
+  pSpark+='</div>'; tSpark+='</div>';
+
+  document.getElementById('clim-grid').innerHTML =
+    cCard('Annual precip',   fmt(c.annPrecipIn,1),'"',   '10-yr mean (2010–2020)',     pct(c.annPrecipIn,60))
+   +cCard('Avg Jan low',     fmt(c.janLowF,1),   '°F',  'Average daily minimum',      pct(c.janLowF+30,90))
+   +cCard('Avg Jul high',    fmt(c.julHighF,1),  '°F',  'Average daily maximum',      pct(c.julHighF,110))
+   +cCard('Growing months',  c.growMo,            ' mo', 'Avg high >50°F',             pct(c.growMo,12))
+   +cCard('Dry weeks/summer',c.dryWks,            ' wk', 'Est. evaporation > rainfall',pct(c.dryWks,14))
+   +cCard('Summer precip',   fmt(c.sumPrecipIn,2),'"/mo','Jun–Aug avg monthly',        pct(c.sumPrecipIn,6))
+   +'<div class="data-card wide"><div class="dc-label">Monthly precipitation (in)</div>'+pSpark+'</div>'
+   +'<div class="data-card wide"><div class="dc-label">Monthly max temperature (°F)</div>'+tSpark+'</div>';
+}
+
+// ── Savings ───────────────────────────────────────────────────────
+function renderSavings(acres) {
+  var sqft = acres*43560;
+  var mow  = Math.round(sqft*0.012*22);    // 22 cuts saved × $0.012/sqft/cut
+  var fert = Math.round(sqft/1000*18*3*0.9);
+  var water= Math.round(sqft/1000*748*12*0.003);
+  var herb = Math.round(acres*90);
+  var total= mow+fert+water+herb;
+  var hrs  = Math.round(acres*22*0.75);
+  var gal  = Math.round(sqft/1000*748*12);
+  var co2  = Math.round(sqft*0.0015*52+sqft*0.0012);
+  var bees = Math.round(sqft*0.012);
+
+  function sc(n,l,d){ return '<div class="sav-card"><div class="sav-lbl">'+l+'</div><div class="sav-num">'+n+'</div><div class="sav-desc">'+d+'</div></div>'; }
+  document.getElementById('sav-grid').innerHTML =
+    sc('$'+total.toLocaleString(),'Saved per year','vs conventional lawn. Mow $'+mow.toLocaleString()+', fertiliser $'+fert.toLocaleString()+', water $'+water.toLocaleString()+', herbicide $'+herb.toLocaleString())
+   +sc(hrs+'h','Mowing hours saved','Down from ~26 cuts/yr to 4–6. At ~45 min/acre per cut.')
+   +sc(gal.toLocaleString()+' gal','Water saved per year','Zero supplemental irrigation after establishment.')
+   +sc('$'+fert.toLocaleString(),'Fertiliser eliminated','Clover N-fixation replaces 3+ synthetic N applications.')
+   +sc(co2+' lbs','CO₂ avoided + sequestered','Mower emissions plus soil carbon in perennial root systems.')
+   +sc(bees.toLocaleString()+'+','Pollinator visits added/yr','Clover, yarrow, violet and self-heal provide continuous bloom Apr–Oct.');
+
+  document.getElementById('eco-list').innerHTML =
+    '🦋 Host plants for native butterfly & moth species (violet, clover, yarrow)<br>'
+    +'🌍 Soil organic matter +0.8–1.2% over 5 years from reduced disturbance and clover biomass<br>'
+    +'💧 Stormwater infiltration increases ~30–50% with deep fescue roots vs monoculture<br>'
+    +'🔇 '+hrs+'h less mower noise per year<br>'
+    +'🧪 Zero synthetic inputs: no nitrate runoff, no pesticide drift, no herbicide leaching<br>'
+    +'<span style="font-size:11px;color:var(--muted)">Sources: EPA (2020), Milesi et al. (2005), Cornell Ext cost benchmarks</span>';
+}
+
+// ── Print / JSON ──────────────────────────────────────────────────
+function doPrint() {
+  ['rec','mix','cal','si','soil','clim','sav'].forEach(openSec);
+  setTimeout(function(){ window.print(); },300);
+}
+
+function doJSON() {
+  if (!geoData||!siResults.length){ alert('Run an analysis first.'); return; }
+  var top5=siResults.slice(0,5);
+  var out={
+    generated:new Date().toISOString(),
+    location:{name:geoData.name,lat:geoData.lat,lon:geoData.lon,zone:climateData?climateData.zone:'?'},
+    inputs:{shade_pct:shadeInput,acres:acresInput},
+    climate:climateData?{annual_precip_in:climateData.annPrecipIn,jan_low_f:climateData.janLowF,jul_high_f:climateData.julHighF,grow_months:climateData.growMo,dry_weeks:climateData.dryWks}:null,
+    soil_surface:soilData?{ph:soilData.phh2o&&soilData.phh2o['0-5cm'],clay_pct:soilData.clay&&soilData.clay['0-5cm'],cec_mmol_per_kg:soilData.cec&&soilData.cec['0-5cm']}:null,
+    recommended_mix:top5.map(function(r,i){return{rank:i+1,id:r.plant.id,name:r.plant.name,si:+r.si.toFixed(4),mix_pct:buildMix(top5)[i].pct};}),
+    all_scores:siResults.map(function(r){return{id:r.plant.id,name:r.plant.name,si:+r.si.toFixed(4)};}),
+  };
+  var txt=JSON.stringify(out,null,2);
+  navigator.clipboard.writeText(txt).then(function(){
+    var b=document.getElementById('json-btn'); b.textContent='✓ Copied!';
+    setTimeout(function(){ b.textContent='{ } Copy as JSON'; },2500);
+  }).catch(function(){
+    var ta=document.createElement('textarea'); ta.value=txt;
+    document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+    var b=document.getElementById('json-btn'); b.textContent='✓ Copied!';
+    setTimeout(function(){ b.textContent='{ } Copy as JSON'; },2500);
+  });
+}
+
+// ── Build mix ratios ──────────────────────────────────────────────
+function buildMix(top5) {
+  var tot=top5.reduce(function(s,r){return s+r.plant.mpct;},0);
+  return top5.map(function(r){return{plant:r.plant,si:r.si,pct:Math.round(r.plant.mpct/tot*100)};});
+}
+
+// ══════════════════════════════════════════════════════════════════
+// MAIN
+// ══════════════════════════════════════════════════════════════════
+function ps(id,cls,txt){ var e=document.getElementById('ps-'+id); if(e){e.className='pipe-status '+cls;e.textContent=txt;} }
+
+async function run() {
+  var addr  = document.getElementById('address').value.trim();
+  var errEl = document.getElementById('error-box');
+  var btn   = document.getElementById('btn');
+  shadeInput = parseInt(document.getElementById('shade-in').value)||0;
+  acresInput = parseFloat(document.getElementById('acres-in').value)||0.25;
+
+  errEl.style.display='none';
+  document.getElementById('results').style.display='none';
+  document.getElementById('pipeline').style.display='block';
+  ['geo','soil','clim','si','sel'].forEach(function(id){ps(id,'ps-wait','Waiting');});
+
+  if (!addr){ errEl.textContent='Please enter an address.'; errEl.style.display='block';
+              document.getElementById('pipeline').style.display='none'; return; }
+  btn.disabled=true; btn.textContent='Analysing…';
+
+  try {
+    // 1. Geocode
+    ps('geo','ps-run','Geocoding…');
+    geoData = await geocode(addr);
+    if (!geoData) throw new Error('Address not found — try a more specific address.');
+    ps('geo','ps-ok','✓ '+geoData.lat.toFixed(4)+', '+geoData.lon.toFixed(4));
+
+    // 2+3. Soil + climate in parallel
+    ps('soil','ps-run','Querying SoilGrids…');
+    ps('clim','ps-run','Querying Open-Meteo ERA5…');
+
+    var par = await Promise.allSettled([
+      fetchSoil(geoData.lat, geoData.lon),
+      fetchClimate(geoData.lat, geoData.lon)
+    ]);
+
+    var soilHit  = par[0].status==='fulfilled' ? par[0].value : null;
+    var climJson = par[1].status==='fulfilled' ? par[1].value : null;
+
+    soilData    = soilHit  ? parseSoil(soilHit.json)   : null;
+    climateData = climJson ? parseClimate(climJson) : null;
+
+    ps('soil', soilData    ?'ps-ok':'ps-err', soilData    ?'✓'+(soilHit.offsetM>0?' nearest '+soilHit.offsetM+'m':' exact point'):'No data');
+    ps('clim', climateData ?'ps-ok':'ps-err', climateData ?'✓ ERA5 2010–2020':'No data');
+
+    // 4. SI
+    ps('si','ps-run','Scoring '+PLANTS.length+' species…');
+    siResults = PLANTS.map(function(p){ return computeSI(p,soilData,climateData,shadeInput); });
+    siResults.sort(function(a,b){ return b.si-a.si; });
+    ps('si','ps-ok','✓ Done');
+
+    // 5. Select
+    ps('sel','ps-run','Selecting top 5…');
+    var top5    = siResults.slice(0,5);
+    var top5ids = top5.map(function(r){ return r.plant.id; });
+    var mix     = buildMix(top5);
+    ps('sel','ps-ok','✓ '+top5.map(function(r){ return r.plant.name; }).join(', '));
+
+    // ── Location bar
+    document.getElementById('r-name').textContent   = geoData.name;
+    document.getElementById('r-coords').textContent = 'lat '+geoData.lat.toFixed(5)+'  lon '+geoData.lon.toFixed(5);
+    var badges='';
+    if (climateData) badges+='<span class="badge badge-green">Zone '+climateData.zone+'</span>';
+    if (soilData&&soilData.phh2o&&soilData.phh2o['0-5cm']!=null)
+      badges+='<span class="badge badge-blue">Soil pH '+soilData.phh2o['0-5cm'].toFixed(1)+'</span>';
+    if (shadeInput>0) badges+='<span class="badge badge-orange">'+shadeInput+'% shade</span>';
+    if (soilHit&&soilHit.offsetM>0)
+      badges+='<span class="badge" style="background:#fff3e6;color:#c25a00;border-color:#fbbf78">Soil nearest '+soilHit.offsetM+'m</span>';
+    document.getElementById('r-badges').innerHTML=badges;
+
+    // ── Render all sections
+    renderRec(top5, mix);
+    renderMix(mix);
+    renderCal(climateData?climateData.zone:'6', top5);
+    renderSI(siResults, top5ids);
+
+    if (soilData) {
+      if (soilHit&&soilHit.offsetM>0) {
+        document.getElementById('soil-offset').textContent='⚠ No soil data at exact location. Showing nearest data found '+soilHit.offsetM+' m away.';
+        document.getElementById('soil-offset').style.display='block';
+      }
+      var tabs=DEPTHS.map(function(d){return '<button class="depth-tab'+(d==='0-5cm'?' active':'')+'" data-depth="'+d+'" onclick="renderSoilDepth(\''+d+'\')">'+d+'</button>';}).join('');
+      document.getElementById('depth-tabs').innerHTML=tabs;
+      renderSoilDepth('0-5cm');
+    } else {
+      document.getElementById('soil-grid').innerHTML='<p style="color:var(--muted);font-style:italic">No soil data available for this location.</p>';
+    }
+
+    if (climateData) renderClimate(climateData);
+    else document.getElementById('clim-grid').innerHTML='<p style="color:var(--muted);font-style:italic">Climate data unavailable.</p>';
+
+    renderSavings(acresInput);
+    var savAcEl = document.getElementById('sav-acres');
+    if (savAcEl) savAcEl.value = acresInput;
+
+    document.getElementById('sources-note').innerHTML =
+      '📍 Geocoding: <a href="https://photon.komoot.io" target="_blank">Photon / Komoot</a> (OpenStreetMap data) &nbsp;·&nbsp; '
+      +'🪨 Soil: <a href="https://www.isric.org/explore/soilgrids" target="_blank">ISRIC SoilGrids v2.0</a> — 250 m global resolution &nbsp;·&nbsp; '
+      +'🌤 Climate: <a href="https://open-meteo.com" target="_blank">Open-Meteo ERA5 archive</a> — 2010–2020 daily data, aggregated to monthly means &nbsp;·&nbsp; '
+      +'🌿 Plant data: USDA PLANTS Database · Penn State Extension · Cornell Cooperative Extension · RHS Horticultural Database · Turgeon (2011) · Christians et al. (2017)<br>'
+      +'All APIs are free and require no authentication. '
+      +'SI methodology: weighted linear combination — Shea et al. (2014) <em>Agricultural Systems</em> 127.';
+
+    document.getElementById('results').style.display='block';
+    document.getElementById('results').scrollIntoView({behavior:'smooth',block:'start'});
+
+  } catch(e) {
+    errEl.textContent='⚠ '+e.message;
+    errEl.style.display='block';
+    console.error(e);
+  }
+  btn.disabled=false; btn.textContent='Analyse →';
+}
+
+document.getElementById('address').addEventListener('keydown',function(e){if(e.key==='Enter')run();});
+</script>
+</body>
+</html>
